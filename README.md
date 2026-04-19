@@ -1,4 +1,4 @@
-# Tessinari Pedras — Gestão de Romaneio
+# MegaOnline — Gestão de Romaneio
 
 Sistema de romaneio de carregamento para controle de pedras ornamentais.
 
