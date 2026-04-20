@@ -115,6 +115,55 @@ thead{display:table-header-group}
 </style>
 </head>
 <body>
+
+<div id="loginScreen" style="
+position:fixed;
+inset:0;
+background:#1a3a5a;
+display:flex;
+align-items:center;
+justify-content:center;
+z-index:9999;
+">
+
+  <div style="
+  background:white;
+  padding:30px;
+  border-radius:12px;
+  width:100%;
+  max-width:320px;
+  text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,.2);
+  ">
+    
+    <h2 style="margin-bottom:20px;color:#1a3a5a">🔐 Acesso</h2>
+
+    <input type="text" id="loginUser" placeholder="Usuário"
+      style="width:100%;margin-bottom:10px;padding:10px">
+
+    <input type="password" id="loginPass" placeholder="Senha"
+      style="width:100%;margin-bottom:15px;padding:10px">
+
+    <button onclick="fazerLogin()" style="
+      width:100%;
+      padding:10px;
+      background:#1a3a5a;
+      color:white;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      font-weight:bold;
+    ">
+      Entrar
+    </button>
+
+    <p id="loginErro" style="color:red;font-size:12px;margin-top:10px;display:none">
+      Usuário ou senha inválidos
+    </p>
+
+  </div>
+</div>
+
 <div class="container">
 
 <!-- MODAL EDITAR ROMANEIO -->
@@ -132,6 +181,20 @@ thead{display:table-header-group}
 <div class="tabs no-print">
   <button class="tab-btn active" onclick="openTab('novo',this)">Novo Romaneio</button>
   <button class="tab-btn" onclick="openTab('historico',this)">Histórico e Gestão</button>
+  <button onclick="logout()" style="
+position:fixed;
+top:10px;
+right:10px;
+z-index:999;
+background:#dc3545;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:6px;
+cursor:pointer;
+">
+Sair
+</button>
 </div>
 
 <!-- ABA NOVO ROMANEIO -->
@@ -316,6 +379,40 @@ thead{display:table-header-group}
 </div><!-- /container -->
 
 <script>
+// CONFIG LOGIN
+const LOGIN_USER = "admin";
+const LOGIN_PASS = "123";
+
+// VERIFICAR LOGIN AO ABRIR
+function checkLogin() {
+  const logado = localStorage.getItem('logado');
+  if (logado === '1') {
+    document.getElementById('loginScreen').style.display = 'none';
+  }
+}
+
+// LOGIN
+function fazerLogin() {
+  const u = document.getElementById('loginUser').value;
+  const p = document.getElementById('loginPass').value;
+
+  if (u === LOGIN_USER && p === LOGIN_PASS) {
+    localStorage.setItem('logado', '1');
+    document.getElementById('loginScreen').style.display = 'none';
+  } else {
+    document.getElementById('loginErro').style.display = 'block';
+  }
+}
+
+// LOGOUT (opcional)
+function logout() {
+  localStorage.removeItem('logado');
+  location.reload();
+}
+
+// CHAMAR AO INICIAR
+window.addEventListener('load', checkLogin);
+
 const state = {
   clientes: JSON.parse(localStorage.getItem('t_cli')) || ["Marmoraria Modelo"],
   materiais: JSON.parse(localStorage.getItem('t_mat')) || ["Branco Siena", "Verde Ubatuba"],
