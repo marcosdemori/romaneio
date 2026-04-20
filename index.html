@@ -27,6 +27,23 @@ body{font-family:'Segoe UI',sans-serif;background:#dfe6e9;padding:12px;color:#2d
 .editable-nome:hover{border-bottom-color:var(--primary)}
 .editable-nome:focus{border-bottom-color:var(--primary);background:#f0f4ff;border-radius:4px;padding:0 4px}
 .edit-hint{font-size:9px;color:#aaa;margin-top:2px;display:block}
+/* LOGIN */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1a3a5a 0%,#2d6a9f 100%);padding:20px}
+.login-box{background:white;border-radius:16px;padding:40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.login-logo{width:80px;height:80px;border-radius:12px;object-fit:contain;margin-bottom:16px}
+.login-title{font-size:22px;font-weight:900;color:var(--primary);margin-bottom:4px}
+.login-sub{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:2px;margin-bottom:28px}
+.login-box input{margin-bottom:12px;padding:12px 14px;font-size:14px}
+.login-btn{width:100%;padding:13px;background:var(--primary);color:white;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;transition:.2s;margin-top:4px}
+.login-btn:hover{background:#0f2640}
+.login-err{color:var(--danger);font-size:12px;margin-top:8px;display:none}
+.login-err.show{display:block}
+.logout-btn{background:none;border:1px solid #ccc;border-radius:5px;padding:5px 12px;cursor:pointer;font-size:11px;color:#666;margin-left:10px}
+.logout-btn:hover{background:#f5f5f5}
+
+/* INDUSTRIALIZAÇÃO */
+.ind-drop{width:100%;font-size:12px;border:none;background:transparent;min-height:36px;cursor:pointer}
+
 @media print{.edit-hint{display:none!important}}
 .romaneio-badge{background:var(--primary);color:white;padding:4px 12px;border-radius:50px;font-size:11px;font-weight:bold;margin-bottom:4px;display:inline-block}
 .romaneio-num{font-size:clamp(16px,4vw,22px);font-weight:bold;color:var(--danger)}
@@ -101,6 +118,34 @@ td{border-bottom:1px solid #eee;padding:7px 6px;text-align:center;vertical-align
 .alerta{display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;font-size:12px;margin-bottom:10px;color:#856404}
 .alerta.show{display:block}
 
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#333;color:white;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;transition:transform .3s ease,opacity .3s ease;opacity:0;pointer-events:none;white-space:nowrap}
+.toast.error{background:var(--danger)}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* CADASTROS */
+.cad-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-top:10px}
+.cad-card{border:1px solid #e0e0e0;border-radius:10px;overflow:hidden}
+.cad-card-header{background:var(--primary);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.cad-card-header h3{font-size:13px;text-transform:uppercase;letter-spacing:1px;margin:0}
+.cad-card-body{padding:16px}
+.cad-list{list-style:none;margin:0 0 12px 0;padding:0;max-height:220px;overflow-y:auto}
+.cad-list li{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;gap:8px}
+.cad-list li:hover{background:#f8fafc}
+.cad-list li span{flex:1}
+.cad-add-row{display:flex;gap:8px;margin-top:4px}
+.cad-add-row input{flex:1;padding:8px 10px;border:1.5px solid #ced4da;border-radius:6px;font-size:13px}
+.cad-add-row input:focus{border-color:var(--primary);outline:none}
+.btn-cad-add{background:var(--success);color:white;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:bold;white-space:nowrap}
+.btn-cad-del{background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:2px 6px;line-height:1;border-radius:4px}
+.btn-cad-del:hover{background:#fff0f0}
+.cad-empty{color:#aaa;font-size:12px;text-align:center;padding:12px}
+.config-section{border:1px solid #e0e0e0;border-radius:10px;overflow:hidden;margin-top:20px}
+.config-section-header{background:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e0e0e0;font-size:12px;font-weight:800;text-transform:uppercase;color:var(--primary)}
+.config-section-body{padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.user-list li{flex-wrap:wrap}
+.user-badge{font-size:10px;background:#e9ecef;padding:2px 7px;border-radius:10px;color:#555;margin-left:6px}
+
 /* PRINT */
 @media print{
 .no-print{display:none!important}
@@ -115,56 +160,23 @@ thead{display:table-header-group}
 </style>
 </head>
 <body>
+<!-- TOAST -->
+<div class="toast" id="toastMsg"></div>
 
-<div id="loginScreen" style="
-position:fixed;
-inset:0;
-background:#1a3a5a;
-display:flex;
-align-items:center;
-justify-content:center;
-z-index:9999;
-">
-
-  <div style="
-  background:white;
-  padding:30px;
-  border-radius:12px;
-  width:100%;
-  max-width:320px;
-  text-align:center;
-  box-shadow:0 10px 30px rgba(0,0,0,.2);
-  ">
-    
-    <h2 style="margin-bottom:20px;color:#1a3a5a">🔐 Acesso</h2>
-
-    <input type="text" id="loginUser" placeholder="Usuário"
-      style="width:100%;margin-bottom:10px;padding:10px">
-
-    <input type="password" id="loginPass" placeholder="Senha"
-      style="width:100%;margin-bottom:15px;padding:10px">
-
-    <button onclick="fazerLogin()" style="
-      width:100%;
-      padding:10px;
-      background:#1a3a5a;
-      color:white;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;
-      font-weight:bold;
-    ">
-      Entrar
-    </button>
-
-    <p id="loginErro" style="color:red;font-size:12px;margin-top:10px;display:none">
-      Usuário ou senha inválidos
-    </p>
-
+<!-- TELA DE LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <img class="login-logo" src="data:image/png;base64,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" alt="Logo">
+    <div class="login-title" id="loginNome">MegaOnline</div>
+    <div class="login-sub">Gestão de Romaneio</div>
+    <input type="text" id="loginUser" placeholder="Usuário" autocomplete="username">
+    <input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password" onkeypress="if(event.key==='Enter')fazerLogin()">
+    <button class="login-btn" onclick="fazerLogin()">ENTRAR</button>
+    <div class="login-err" id="loginErr">Usuário ou senha incorretos</div>
   </div>
 </div>
 
-<div class="container">
+<div id="appContainer" style="display:none;max-width:1100px;margin:auto;background:white;padding:20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.1)">
 
 <!-- MODAL EDITAR ROMANEIO -->
 <div class="modal-bg" id="modalEdit">
@@ -178,23 +190,13 @@ z-index:9999;
   </div>
 </div>
 
-<div class="tabs no-print">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:18px" class="no-print">
+  <div class="tabs" style="margin:0;flex:1">
   <button class="tab-btn active" onclick="openTab('novo',this)">Novo Romaneio</button>
-  <button class="tab-btn" onclick="openTab('historico',this)">Histórico e Gestão</button>
-  <button onclick="logout()" style="
-position:fixed;
-top:10px;
-right:10px;
-z-index:999;
-background:#dc3545;
-color:white;
-border:none;
-padding:8px 12px;
-border-radius:6px;
-cursor:pointer;
-">
-Sair
-</button>
+  <button class="tab-btn" onclick="openTab('cadastros',this)">Cadastros</button>
+    <button class="tab-btn" onclick="openTab('historico',this)">Histórico e Gestão</button>
+  </div>
+  <button class="logout-btn no-print" onclick="fazerLogout()">🚪 Sair</button>
 </div>
 
 <!-- ABA NOVO ROMANEIO -->
@@ -219,16 +221,13 @@ Sair
     <div class="form-group">
       <label>Cliente</label>
       <select id="clienteSelect" onchange="syncCliente()"></select>
-      <input type="text" placeholder="+ Novo cliente (Enter)" style="margin-top:6px" onkeypress="addOpt(event,'clienteSelect','clientes')">
+
     </div>
     <div class="form-group">
       <label>CNPJ / CPF</label>
       <input type="text" id="docCliente" placeholder="Opcional" oninput="document.getElementById('dispDoc').innerText=this.value">
     </div>
-    <div class="form-group">
-      <label>Material (cadastrar)</label>
-      <input type="text" placeholder="+ Novo material (Enter)" onkeypress="addOpt(event,null,'materiais')">
-    </div>
+
     <div class="form-group">
       <label>Vendedor</label>
       <input type="text" id="vendedorInput" oninput="document.getElementById('dispVendedor').innerText=this.value">
@@ -243,29 +242,7 @@ Sair
       <label>Parcelas</label>
       <input type="number" id="qtdParc" value="1" min="1" inputmode="numeric" oninput="calcFinal()">
     </div>
-    <div class="form-group">
-      <label>Telefone / WhatsApp</label>
-      <input type="tel" id="telefoneInput" inputmode="tel" placeholder="(00) 00000-0000" oninput="salvarContato()">
-    </div>
-    <div class="form-group">
-      <label>Rede Social</label>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <select id="redeTipo" onchange="salvarContato()" style="width:110px;flex-shrink:0">
-          <option value="instagram.com/">Instagram</option>
-          <option value="facebook.com/">Facebook</option>
-          <option value="wa.me/">WhatsApp</option>
-          <option value="tiktok.com/@">TikTok</option>
-          <option value="linkedin.com/in/">LinkedIn</option>
-          <option value="">Link próprio</option>
-        </select>
-        <input type="text" id="redesInput" placeholder="usuário ou link" oninput="salvarContato()">
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Logo da Empresa</label>
-      <input type="file" id="logoUpload" accept="image/*" onchange="carregarLogo(this)" style="font-size:11px;padding:6px">
-      <button type="button" onclick="resetarLogo()" style="margin-top:4px;font-size:10px;background:none;border:1px solid #ccc;border-radius:4px;padding:3px 8px;cursor:pointer;color:#888">↺ usar padrão</button>
-    </div>
+
   </div>
 
   <div id="alertaNum" class="alerta no-print">⚠️ Este número de romaneio já foi utilizado!</div>
@@ -285,10 +262,12 @@ Sair
       <thead>
         <tr>
           <th style="min-width:55px">Qtd</th>
-          <th style="min-width:160px">Material</th>
-          <th style="min-width:70px">Lote</th>
-          <th style="min-width:75px">Comp (m)</th>
-          <th style="min-width:75px">Larg (m)</th>
+          <th style="min-width:150px">Material</th>
+          <th style="min-width:120px">Industrialização</th>
+          <th style="min-width:65px">Lote</th>
+          <th style="min-width:80px">Comp (m)</th>
+          <th style="min-width:80px">Altura (m)</th>
+          <th style="min-width:80px">Larg/Esp (m)</th>
           <th style="min-width:65px">m²</th>
           <th style="min-width:90px">Preço/m²</th>
           <th style="min-width:100px">Total R$</th>
@@ -376,46 +355,138 @@ Sair
   <p style="font-size:11px;color:#aaa;margin-top:10px;text-align:center" class="no-print">Clique em uma linha para ver detalhes</p>
 </div>
 
-</div><!-- /container -->
+<!-- ABA CADASTROS -->
+<div id="cadastros" class="tab-content">
+  <h2 style="margin-bottom:6px;color:var(--primary)">Cadastros</h2>
+  <p style="font-size:12px;color:#888;margin-bottom:16px">Gerencie clientes, materiais, industrializações, usuários e configurações do sistema.</p>
+
+  <div class="cad-grid">
+
+    <!-- CLIENTES -->
+    <div class="cad-card">
+      <div class="cad-card-header">
+        <h3>👤 Clientes</h3>
+        <span id="cliCount" style="font-size:11px;opacity:.8"></span>
+      </div>
+      <div class="cad-card-body">
+        <ul class="cad-list" id="cliList"></ul>
+        <div class="cad-add-row">
+          <input type="text" id="cliInput" placeholder="Nome do cliente..." onkeypress="if(event.key==='Enter')cadAdd('clientes','t_cli','cliInput','cliList','cliCount')">
+          <button class="btn-cad-add" onclick="cadAdd('clientes','t_cli','cliInput','cliList','cliCount')">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATERIAIS -->
+    <div class="cad-card">
+      <div class="cad-card-header">
+        <h3>🪨 Materiais</h3>
+        <span id="matCount" style="font-size:11px;opacity:.8"></span>
+      </div>
+      <div class="cad-card-body">
+        <ul class="cad-list" id="matList"></ul>
+        <div class="cad-add-row">
+          <input type="text" id="matInput" placeholder="Nome do material..." onkeypress="if(event.key==='Enter')cadAdd('materiais','t_mat','matInput','matList','matCount')">
+          <button class="btn-cad-add" onclick="cadAdd('materiais','t_mat','matInput','matList','matCount')">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INDUSTRIALIZAÇÕES -->
+    <div class="cad-card">
+      <div class="cad-card-header">
+        <h3>⚙️ Industrializações</h3>
+        <span id="indCount" style="font-size:11px;opacity:.8"></span>
+      </div>
+      <div class="cad-card-body">
+        <ul class="cad-list" id="indList"></ul>
+        <div class="cad-add-row">
+          <input type="text" id="indInput" placeholder="Ex: Polido, Bruto..." onkeypress="if(event.key==='Enter')cadAdd('industrializacoes','t_ind','indInput','indList','indCount')">
+          <button class="btn-cad-add" onclick="cadAdd('industrializacoes','t_ind','indInput','indList','indCount')">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div class="cad-card">
+      <div class="cad-card-header">
+        <h3>🔐 Usuários do Sistema</h3>
+        <span id="userCount" style="font-size:11px;opacity:.8"></span>
+      </div>
+      <div class="cad-card-body">
+        <ul class="cad-list user-list" id="userList"></ul>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+          <input type="text" id="userInput" placeholder="Usuário" style="padding:8px 10px;border:1.5px solid #ced4da;border-radius:6px;font-size:13px">
+          <input type="password" id="passInput" placeholder="Senha" style="padding:8px 10px;border:1.5px solid #ced4da;border-radius:6px;font-size:13px">
+        </div>
+        <button class="btn-cad-add" style="width:100%;margin-top:8px" onclick="cadAddUser()">+ Adicionar Usuário</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CONFIGURAÇÕES DA EMPRESA -->
+  <div class="config-section">
+    <div class="config-section-header">🏢 Configurações da Empresa</div>
+    <div class="config-section-body">
+      <div class="form-group">
+        <label>Nome da Empresa</label>
+        <input type="text" id="cfgNome" oninput="salvarConfigEmpresa()">
+      </div>
+      <div class="form-group">
+        <label>Subtítulo / Slogan</label>
+        <input type="text" id="cfgSub" oninput="salvarConfigEmpresa()">
+      </div>
+      <div class="form-group">
+        <label>Telefone / WhatsApp</label>
+        <input type="tel" id="cfgTel" inputmode="tel" oninput="salvarConfigContato()">
+      </div>
+      <div class="form-group">
+        <label>Rede Social</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <select id="cfgRedeTipo" onchange="salvarConfigContato()" style="width:110px;flex-shrink:0">
+            <option value="instagram.com/">Instagram</option>
+            <option value="facebook.com/">Facebook</option>
+            <option value="wa.me/">WhatsApp</option>
+            <option value="tiktok.com/@">TikTok</option>
+            <option value="linkedin.com/in/">LinkedIn</option>
+            <option value="">Link próprio</option>
+          </select>
+          <input type="text" id="cfgRedeUser" placeholder="usuário ou link" oninput="salvarConfigContato()" style="flex:1;min-width:100px">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Logo da Empresa</label>
+        <input type="file" accept="image/*" onchange="carregarLogo(this)" style="font-size:11px;padding:6px">
+        <button type="button" onclick="resetarLogo()" style="margin-top:4px;font-size:10px;background:none;border:1px solid #ccc;border-radius:4px;padding:3px 8px;cursor:pointer;color:#888">↺ usar logo padrão</button>
+      </div>
+      <div class="form-group">
+        <label>Alterar Senha de Login</label>
+        <input type="password" id="cfgSenhaAtual" placeholder="Senha atual">
+        <input type="password" id="cfgSenhaNova" placeholder="Nova senha" style="margin-top:6px">
+        <button type="button" onclick="alterarSenhaAdmin()" style="margin-top:6px;width:100%;padding:9px;background:var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold">Alterar Senha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZONA DE PERIGO -->
+  <div class="config-section" style="margin-top:16px;border-color:#f5c6cb">
+    <div class="config-section-header" style="background:#fff5f5;color:var(--danger)">⚠️ Zona de Perigo</div>
+    <div style="padding:16px;display:flex;gap:12px;flex-wrap:wrap">
+      <button onclick="limparHistorico()" style="padding:10px 18px;background:var(--danger);color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold">🗑️ Limpar Histórico</button>
+      <button onclick="exportarCSV()" style="padding:10px 18px;background:#6c757d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold">📊 Exportar CSV</button>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /appContainer -->
 
 <script>
-// CONFIG LOGIN
-const LOGIN_USER = "admin";
-const LOGIN_PASS = "123";
-
-// VERIFICAR LOGIN AO ABRIR
-function checkLogin() {
-  const logado = localStorage.getItem('logado');
-  if (logado === '1') {
-    document.getElementById('loginScreen').style.display = 'none';
-  }
-}
-
-// LOGIN
-function fazerLogin() {
-  const u = document.getElementById('loginUser').value;
-  const p = document.getElementById('loginPass').value;
-
-  if (u === LOGIN_USER && p === LOGIN_PASS) {
-    localStorage.setItem('logado', '1');
-    document.getElementById('loginScreen').style.display = 'none';
-  } else {
-    document.getElementById('loginErro').style.display = 'block';
-  }
-}
-
-// LOGOUT (opcional)
-function logout() {
-  localStorage.removeItem('logado');
-  location.reload();
-}
-
-// CHAMAR AO INICIAR
-window.addEventListener('load', checkLogin);
-
 const state = {
   clientes: JSON.parse(localStorage.getItem('t_cli')) || ["Marmoraria Modelo"],
   materiais: JSON.parse(localStorage.getItem('t_mat')) || ["Branco Siena", "Verde Ubatuba"],
+  industrializacoes: JSON.parse(localStorage.getItem('t_ind')) || ["Bruto","Polido","Bi-Polido","Escovado","Flameado","Jateado","Levigado","Apicoado"],
   historico: JSON.parse(localStorage.getItem('t_hist')) || [],
   num: parseInt(localStorage.getItem('t_num')) || 1,
   logo: localStorage.getItem('t_logo') || 'data:image/png;base64,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',
@@ -423,10 +494,217 @@ const state = {
   subEmpresa: localStorage.getItem('t_sub') || 'Gestão de Romaneio',
   telefone: localStorage.getItem('t_tel') || '',
   redeTipo: localStorage.getItem('t_redeTipo') || 'instagram.com/',
-  redesInput: localStorage.getItem('t_redesInput') || ''
+  redesInput: localStorage.getItem('t_redesInput') || '',
+  usuarios: JSON.parse(localStorage.getItem('t_users')) || [{user:'admin',pass:'1234'}]
 };
 
 let modalIdx = null;
+
+function fazerLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const ok = state.usuarios.some(x => x.user === u && x.pass === p);
+  if (ok) {
+    sessionStorage.setItem('t_logado', '1');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContainer').style.display = 'block';
+    init();
+  } else {
+    document.getElementById('loginErr').classList.add('show');
+    document.getElementById('loginPass').value = '';
+  }
+}
+
+function fazerLogout() {
+  sessionStorage.removeItem('t_logado');
+  location.reload();
+}
+
+function renderCadastros() {
+  // Clientes
+  renderCadList('clientes', 't_cli', 'cliList', 'cliCount');
+  // Materiais
+  renderCadList('materiais', 't_mat', 'matList', 'matCount');
+  // Industrializações
+  renderCadList('industrializacoes', 't_ind', 'indList', 'indCount');
+  // Usuários
+  renderUserList();
+  // Config empresa
+  const el = (id) => document.getElementById(id);
+  el('cfgNome').value = state.nomeEmpresa;
+  el('cfgSub').value = state.subEmpresa;
+  el('cfgTel').value = state.telefone;
+  el('cfgRedeTipo').value = state.redeTipo;
+  el('cfgRedeUser').value = state.redesInput;
+}
+
+function renderCadList(stateKey, lsKey, listId, countId) {
+  const ul = document.getElementById(listId);
+  const count = document.getElementById(countId);
+  const arr = state[stateKey];
+  count.innerText = arr.length + ' cadastrado' + (arr.length !== 1 ? 's' : '');
+  if (!arr.length) { ul.innerHTML = '<li class="cad-empty">Nenhum cadastro ainda</li>'; return; }
+  ul.innerHTML = '';
+  [...arr].sort().forEach(item => {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.textContent = item;
+    const btn = document.createElement('button');
+    btn.className = 'btn-cad-del';
+    btn.title = 'Remover';
+    btn.textContent = '×';
+    btn.addEventListener('click', function() {
+      cadDelByName(stateKey, lsKey, listId, countId, item);
+    });
+    li.appendChild(span);
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+}
+
+function renderUserList() {
+  const ul = document.getElementById('userList');
+  const count = document.getElementById('userCount');
+  const arr = state.usuarios;
+  count.innerText = arr.length + ' usuário' + (arr.length !== 1 ? 's' : '');
+  ul.innerHTML = '';
+  arr.forEach((u, i) => {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.innerHTML = u.user + ' <span class="user-badge">●●●●</span>';
+    li.appendChild(span);
+    if (arr.length > 1) {
+      const btn = document.createElement('button');
+      btn.className = 'btn-cad-del';
+      btn.title = 'Remover';
+      btn.textContent = '×';
+      btn.addEventListener('click', function() { cadDelUser(i); });
+      li.appendChild(btn);
+    }
+    ul.appendChild(li);
+  });
+}
+
+function cadAdd(stateKey, lsKey, inputId, listId, countId) {
+  const input = document.getElementById(inputId);
+  const val = input.value.trim();
+  if (!val) return;
+  if (state[stateKey].includes(val)) { alert('Já cadastrado!'); return; }
+  state[stateKey].push(val);
+  localStorage.setItem(lsKey, JSON.stringify(state[stateKey]));
+  input.value = '';
+  renderCadList(stateKey, lsKey, listId, countId);
+  updateDropdowns();
+}
+
+function cadDel(stateKey, lsKey, listId, countId, idx) {
+  if (!confirm('Remover este item?')) return;
+  state[stateKey].splice(idx, 1);
+  localStorage.setItem(lsKey, JSON.stringify(state[stateKey]));
+  renderCadList(stateKey, lsKey, listId, countId);
+  updateDropdowns();
+}
+
+function cadDelByName(stateKey, lsKey, listId, countId, name) {
+  const idx = state[stateKey].indexOf(name);
+  if (idx === -1) return;
+  state[stateKey].splice(idx, 1);
+  localStorage.setItem(lsKey, JSON.stringify(state[stateKey]));
+  renderCadList(stateKey, lsKey, listId, countId);
+  updateDropdowns();
+  showToast('"' + name + '" removido');
+}
+
+function cadAddUser() {
+  const u = document.getElementById('userInput').value.trim();
+  const p = document.getElementById('passInput').value;
+  if (!u || !p) { alert('Preencha usuário e senha!'); return; }
+  if (state.usuarios.some(x => x.user === u)) { alert('Usuário já existe!'); return; }
+  state.usuarios.push({user: u, pass: p});
+  localStorage.setItem('t_users', JSON.stringify(state.usuarios));
+  document.getElementById('userInput').value = '';
+  document.getElementById('passInput').value = '';
+  renderUserList();
+}
+
+function cadDelUser(idx) {
+  if (state.usuarios.length <= 1) { showToast('Deve haver ao menos um usuário!', true); return; }
+  const nome = state.usuarios[idx].user;
+  state.usuarios.splice(idx, 1);
+  localStorage.setItem('t_users', JSON.stringify(state.usuarios));
+  renderUserList();
+  showToast('Usuário "' + nome + '" removido');
+}
+
+function salvarConfigEmpresa() {
+  const nome = document.getElementById('cfgNome').value.trim() || 'MegaOnline';
+  const sub = document.getElementById('cfgSub').value.trim() || 'Gestão de Romaneio';
+  state.nomeEmpresa = nome; state.subEmpresa = sub;
+  localStorage.setItem('t_nome', nome); localStorage.setItem('t_sub', sub);
+  const ne = document.getElementById('nomeEmpresa');
+  const se = document.getElementById('subEmpresa');
+  if (ne) ne.innerText = nome;
+  if (se) se.innerText = sub;
+  document.title = nome + ' - Gestão de Romaneio';
+  document.getElementById('loginNome').innerText = nome;
+}
+
+function salvarConfigContato() {
+  const tel = document.getElementById('cfgTel').value.trim();
+  const tipo = document.getElementById('cfgRedeTipo').value;
+  const user = document.getElementById('cfgRedeUser').value.trim();
+  state.telefone = tel; state.redeTipo = tipo; state.redesInput = user;
+  localStorage.setItem('t_tel', tel);
+  localStorage.setItem('t_redeTipo', tipo);
+  localStorage.setItem('t_redesInput', user);
+  // Atualiza exibição no rodapé do romaneio
+  const dispTel = document.getElementById('dispTelefone');
+  const dispRede = document.getElementById('dispRede');
+  if (dispTel) dispTel.innerText = tel ? '📞 ' + tel : '';
+  let url = '', label = '';
+  if (user) {
+    url = tipo === '' ? (user.startsWith('http') ? user : 'https://' + user) : 'https://' + tipo + user;
+    const nomeRede = document.getElementById('cfgRedeTipo').options[document.getElementById('cfgRedeTipo').selectedIndex].text;
+    label = tipo === '' ? url : nomeRede + ': ' + user;
+    if (dispRede) dispRede.innerText = '🔗 ' + label;
+  } else { if (dispRede) dispRede.innerText = ''; }
+  // Atualiza QR
+  const qrEl = document.getElementById('qrcode');
+  if (qrEl) { qrEl.innerHTML = ''; try { new QRCode(qrEl, { text: url || tel || window.location.href, width: 70, height: 70 }); } catch(e){} }
+}
+
+function alterarSenhaAdmin() {
+  const atual = document.getElementById('cfgSenhaAtual').value;
+  const nova = document.getElementById('cfgSenhaNova').value;
+  if (!atual || !nova) { alert('Preencha a senha atual e a nova!'); return; }
+  const user = state.usuarios.find(u => u.user === 'admin');
+  if (!user || user.pass !== atual) { alert('Senha atual incorreta!'); return; }
+  user.pass = nova;
+  localStorage.setItem('t_users', JSON.stringify(state.usuarios));
+  document.getElementById('cfgSenhaAtual').value = '';
+  document.getElementById('cfgSenhaNova').value = '';
+  alert('✅ Senha alterada com sucesso!');
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toastMsg');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  setTimeout(() => t.classList.add('show'), 10);
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function checkLogin() {
+  const nomeEmp = localStorage.getItem('t_nome') || 'MegaOnline';
+  document.getElementById('loginNome').innerText = nomeEmp;
+  const logoSalva = localStorage.getItem('t_logo');
+  if (logoSalva) document.querySelector('.login-logo').src = logoSalva;
+  if (sessionStorage.getItem('t_logado') === '1') {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContainer').style.display = 'block';
+    init();
+  }
+}
 
 function init() {
   document.getElementById('currentDate').innerText = new Date().toLocaleDateString('pt-BR');
@@ -460,30 +738,16 @@ function init() {
 
   document.title = state.nomeEmpresa + ' - Gestão de Romaneio';
 
-  // Carregar contato salvo
-  if (state.telefone) document.getElementById('telefoneInput').value = state.telefone;
-  if (state.redesInput) document.getElementById('redesInput').value = state.redesInput;
-  document.getElementById('redeTipo').value = state.redeTipo;
+  // Atualizar contato no rodapé
   atualizarContato();
 }
 
-function salvarContato() {
-  const tel = document.getElementById('telefoneInput').value.trim();
-  const tipo = document.getElementById('redeTipo').value;
-  const user = document.getElementById('redesInput').value.trim();
-  localStorage.setItem('t_tel', tel);
-  localStorage.setItem('t_redeTipo', tipo);
-  localStorage.setItem('t_redesInput', user);
-  state.telefone = tel;
-  state.redeTipo = tipo;
-  state.redesInput = user;
-  atualizarContato();
-}
+
 
 function atualizarContato() {
-  const tel = document.getElementById('telefoneInput').value.trim();
-  const tipo = document.getElementById('redeTipo').value;
-  const user = document.getElementById('redesInput').value.trim();
+  const tel = state.telefone || '';
+  const tipo = state.redeTipo || '';
+  const user = state.redesInput || '';
 
   // Atualizar exibição do telefone
   const dispTel = document.getElementById('dispTelefone');
@@ -524,10 +788,11 @@ function syncCliente() {
 
 function addOpt(e, id, key) {
   if (e.key === 'Enter' && e.target.value.trim()) {
-    const k = key === 'clientes' ? 'clientes' : 'materiais';
-    if (state[k].includes(e.target.value.trim())) { alert('Já cadastrado!'); return; }
-    state[k].push(e.target.value.trim());
-    localStorage.setItem('t_' + (key === 'clientes' ? 'cli' : 'mat'), JSON.stringify(state[k]));
+    const keyMap = { clientes: ['clientes','t_cli'], materiais: ['materiais','t_mat'], industrializacoes: ['industrializacoes','t_ind'] };
+    const [stateKey, lsKey] = keyMap[key] || ['materiais','t_mat'];
+    if (state[stateKey].includes(e.target.value.trim())) { alert('Já cadastrado!'); return; }
+    state[stateKey].push(e.target.value.trim());
+    localStorage.setItem(lsKey, JSON.stringify(state[stateKey]));
     updateDropdowns();
     e.target.value = '';
   }
@@ -545,6 +810,12 @@ function updateDropdowns() {
     state.materiais.sort().forEach(m => sel.add(new Option(m, m)));
     sel.value = v;
   });
+  document.querySelectorAll('.ind-drop').forEach(sel => {
+    const v = sel.value;
+    sel.innerHTML = '<option value="">Industrialização...</option>';
+    state.industrializacoes.sort().forEach(i => sel.add(new Option(i, i)));
+    sel.value = v;
+  });
 }
 
 function addRow() {
@@ -552,9 +823,11 @@ function addRow() {
   tr.innerHTML = `
     <td><input type="number" value="1" min="1" class="q" inputmode="numeric" oninput="calcFinal()" style="width:50px"></td>
     <td><select class="mat-drop" style="width:100%;font-size:12px;border:none;background:transparent;min-height:36px"></select></td>
-    <td><input type="text" style="width:65px" placeholder="—"></td>
+    <td><select class="ind-drop" style="width:100%;font-size:12px;border:none;background:transparent;min-height:36px" onchange="this.style.outline=''"></select></td>
+    <td><input type="text" style="width:60px" placeholder="—"></td>
     <td class="col-dim"><input type="number" step="0.01" min="0" class="c" inputmode="decimal" oninput="calcFinal();validarCampo(this)" placeholder="0.00"></td>
-    <td class="col-dim"><input type="number" step="0.01" min="0" class="l" inputmode="decimal" oninput="calcFinal();validarCampo(this)" placeholder="0.00"></td>
+    <td class="col-dim"><input type="number" step="0.01" min="0" class="a" inputmode="decimal" oninput="calcFinal();validarCampo(this)" placeholder="0.00"></td>
+    <td class="col-dim"><input type="number" step="0.01" min="0" class="l" inputmode="decimal" oninput="calcFinal();validarCampo(this)" placeholder="0.02" value="0.02"></td>
     <td class="aI" style="font-weight:600;white-space:nowrap">0.00</td>
     <td><input type="number" min="0" class="p" inputmode="decimal" oninput="calcFinal();validarCampo(this)" placeholder="0.00" style="width:85px"></td>
     <td class="tI" style="font-weight:bold;color:var(--primary);white-space:nowrap">0,00</td>
@@ -576,10 +849,11 @@ function calcFinal() {
   let aT = 0, sT = 0;
   document.querySelectorAll('#mainTable tbody tr').forEach(row => {
     const c = parseFloat(row.querySelector('.c').value) || 0;
+    const a = parseFloat(row.querySelector('.a').value) || 0;
     const l = parseFloat(row.querySelector('.l').value) || 0;
     const q = parseFloat(row.querySelector('.q').value) || 0;
     const p = parseFloat(row.querySelector('.p').value) || 0;
-    const area = c * l * q;
+    const area = c * a * q;
     const tot = area * p;
     row.querySelector('.aI').innerText = area.toFixed(2);
     row.querySelector('.tI').innerText = tot.toLocaleString('pt-BR', {minimumFractionDigits: 2});
@@ -621,14 +895,23 @@ function finalizar() {
   // Validar campos obrigatórios
   let invalido = false;
   document.querySelectorAll('#mainTable tbody tr').forEach(row => {
-    ['c','l','p'].forEach(cls => {
+    ['c','a','l','p'].forEach(cls => {
       const inp = row.querySelector('.' + cls);
       if (!inp.value || parseFloat(inp.value) <= 0) {
         inp.classList.add('erro'); invalido = true;
       }
     });
+    // Validar industrialização
+    const indSel = row.querySelector('.ind-drop');
+    if (!indSel.value) {
+      indSel.style.outline = '2px solid var(--danger)';
+      indSel.style.borderRadius = '4px';
+      invalido = true;
+    } else {
+      indSel.style.outline = '';
+    }
   });
-  if (invalido) { alert("⚠️ Preencha todos os campos de dimensão e preço antes de finalizar!"); return; }
+  if (invalido) { alert("⚠️ Preencha todos os campos obrigatórios (dimensões, preço e industrialização) antes de finalizar!"); return; }
 
   if (verificarNumDuplicado()) {
     if (!confirm("Este número de romaneio já existe. Deseja continuar mesmo assim?")) return;
@@ -638,12 +921,14 @@ function finalizar() {
   const itens = [];
   document.querySelectorAll('#mainTable tbody tr').forEach(row => {
     const mat = row.querySelector('.mat-drop').value;
+    const ind = row.querySelector('.ind-drop').value;
     const lote = row.querySelectorAll('td input[type=text]')[0]?.value || '';
     const c = parseFloat(row.querySelector('.c').value) || 0;
+    const a = parseFloat(row.querySelector('.a').value) || 0;
     const l = parseFloat(row.querySelector('.l').value) || 0;
     const q = parseFloat(row.querySelector('.q').value) || 0;
     const p = parseFloat(row.querySelector('.p').value) || 0;
-    itens.push({ mat, lote, c, l, q, p, area: (c*l*q).toFixed(2), total: (c*l*q*p).toFixed(2) });
+    itens.push({ mat, ind, lote, c, a, l, q, p, area: (c*a*q).toFixed(2), total: (c*a*q*p).toFixed(2) });
   });
 
   const registro = {
@@ -710,6 +995,7 @@ function abrirModal(idx) {
     itensHtml = `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:10px">
       <thead><tr style="background:#f0f0f0">
         <th style="padding:6px;text-align:left">Material</th>
+        <th style="padding:6px">Industrializ.</th>
         <th style="padding:6px">Lote</th>
         <th style="padding:6px">m²</th>
         <th style="padding:6px">Total</th>
@@ -717,6 +1003,7 @@ function abrirModal(idx) {
     r.itens.forEach(it => {
       itensHtml += `<tr style="border-bottom:1px solid #eee">
         <td style="padding:6px;text-align:left">${it.mat||'—'}</td>
+        <td style="padding:6px;text-align:center">${it.ind||'—'}</td>
         <td style="padding:6px;text-align:center">${it.lote||'—'}</td>
         <td style="padding:6px;text-align:center">${it.area}</td>
         <td style="padding:6px;text-align:center;font-weight:bold">R$ ${parseFloat(it.total).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
@@ -772,6 +1059,7 @@ function openTab(id, btn) {
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
   if (id === 'historico') renderHist();
+  if (id === 'cadastros') renderCadastros();
 }
 
 function reidx() { /* índice removido - qtd está na 1ª coluna */ }
@@ -815,7 +1103,7 @@ function mostrarLogo(src) {
 
 document.getElementById('romaneioNumero').addEventListener('input', verificarNumDuplicado);
 
-init();
+checkLogin();
 </script>
 </body>
 </html>
