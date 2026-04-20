@@ -20,10 +20,14 @@ body{font-family:'Segoe UI',sans-serif;background:#dfe6e9;padding:12px;color:#2d
 /* HEADER */
 .main-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--primary);padding-bottom:15px;margin-bottom:18px;gap:10px;flex-wrap:wrap}
 .logo-area{display:flex;align-items:center;gap:12px}
-.logo-img{width:60px;height:60px;border-radius:8px;object-fit:contain;display:none}
-.logo-img.visible{display:block}
+.logo-img{width:60px;height:60px;border-radius:8px;object-fit:contain;display:block}
 .logo-text{font-size:clamp(18px,5vw,30px);font-weight:900;color:var(--primary);letter-spacing:-1px;line-height:1}
 .logo-sub{font-size:10px;color:#636e72;text-transform:uppercase;letter-spacing:2px;margin-top:4px}
+.editable-nome{cursor:text;border-bottom:2px dashed transparent;transition:.2s;outline:none;display:inline-block;min-width:60px}
+.editable-nome:hover{border-bottom-color:var(--primary)}
+.editable-nome:focus{border-bottom-color:var(--primary);background:#f0f4ff;border-radius:4px;padding:0 4px}
+.edit-hint{font-size:9px;color:#aaa;margin-top:2px;display:block}
+@media print{.edit-hint{display:none!important}}
 .romaneio-badge{background:var(--primary);color:white;padding:4px 12px;border-radius:50px;font-size:11px;font-weight:bold;margin-bottom:4px;display:inline-block}
 .romaneio-num{font-size:clamp(16px,4vw,22px);font-weight:bold;color:var(--danger)}
 
@@ -134,10 +138,11 @@ thead{display:table-header-group}
 <div id="novo" class="tab-content active">
   <header class="main-header">
     <div class="logo-area">
-      <img id="logoImg" class="logo-img" src="" alt="Logo">
+      <img id="logoImg" class="logo-img" src="" alt="Logo" style="display:block">
       <div>
-        <div class="logo-text">TESSINARI PEDRAS</div>
-        <div class="logo-sub">Qualidade em Rochas Ornamentais</div>
+        <div class="logo-text"><span id="nomeEmpresa" class="editable-nome" contenteditable="true" spellcheck="false" title="Clique para editar o nome">MegaOnline</span></div>
+        <div class="logo-sub"><span id="subEmpresa" class="editable-nome" contenteditable="true" spellcheck="false" title="Clique para editar o subtítulo">Gestão de Romaneio</span></div>
+        <span class="edit-hint no-print">✏️ clique para editar</span>
       </div>
     </div>
     <div style="text-align:right">
@@ -176,8 +181,27 @@ thead{display:table-header-group}
       <input type="number" id="qtdParc" value="1" min="1" inputmode="numeric" oninput="calcFinal()">
     </div>
     <div class="form-group">
+      <label>Telefone / WhatsApp</label>
+      <input type="tel" id="telefoneInput" inputmode="tel" placeholder="(00) 00000-0000" oninput="salvarContato()">
+    </div>
+    <div class="form-group">
+      <label>Rede Social</label>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <select id="redeTipo" onchange="salvarContato()" style="width:110px;flex-shrink:0">
+          <option value="instagram.com/">Instagram</option>
+          <option value="facebook.com/">Facebook</option>
+          <option value="wa.me/">WhatsApp</option>
+          <option value="tiktok.com/@">TikTok</option>
+          <option value="linkedin.com/in/">LinkedIn</option>
+          <option value="">Link próprio</option>
+        </select>
+        <input type="text" id="redesInput" placeholder="usuário ou link" oninput="salvarContato()">
+      </div>
+    </div>
+    <div class="form-group">
       <label>Logo da Empresa</label>
       <input type="file" id="logoUpload" accept="image/*" onchange="carregarLogo(this)" style="font-size:11px;padding:6px">
+      <button type="button" onclick="resetarLogo()" style="margin-top:4px;font-size:10px;background:none;border:1px solid #ccc;border-radius:4px;padding:3px 8px;cursor:pointer;color:#888">↺ usar padrão</button>
     </div>
   </div>
 
@@ -197,12 +221,11 @@ thead{display:table-header-group}
     <table id="mainTable">
       <thead>
         <tr>
-          <th>#</th>
+          <th style="min-width:55px">Qtd</th>
           <th style="min-width:160px">Material</th>
           <th style="min-width:70px">Lote</th>
           <th style="min-width:75px">Comp (m)</th>
           <th style="min-width:75px">Larg (m)</th>
-          <th style="min-width:55px">Qtd</th>
           <th style="min-width:65px">m²</th>
           <th style="min-width:90px">Preço/m²</th>
           <th style="min-width:100px">Total R$</th>
@@ -255,7 +278,8 @@ thead{display:table-header-group}
     <div class="signature-area">ASSINATURA RESPONSÁVEL / CLIENTE</div>
     <div style="text-align:center">
       <div id="qrcode"></div>
-      <div style="font-size:10px;font-weight:bold;margin-top:4px;color:var(--primary)">(28) 99973-4814</div>
+      <div id="dispTelefone" style="font-size:11px;font-weight:bold;margin-top:5px;color:var(--primary)"></div>
+      <div id="dispRede" style="font-size:10px;color:#555;margin-top:2px"></div>
     </div>
   </div>
 
@@ -297,7 +321,12 @@ const state = {
   materiais: JSON.parse(localStorage.getItem('t_mat')) || ["Branco Siena", "Verde Ubatuba"],
   historico: JSON.parse(localStorage.getItem('t_hist')) || [],
   num: parseInt(localStorage.getItem('t_num')) || 1,
-  logo: localStorage.getItem('t_logo') || null
+  logo: localStorage.getItem('t_logo') || 'data:image/png;base64,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',
+  nomeEmpresa: localStorage.getItem('t_nome') || 'MegaOnline',
+  subEmpresa: localStorage.getItem('t_sub') || 'Gestão de Romaneio',
+  telefone: localStorage.getItem('t_tel') || '',
+  redeTipo: localStorage.getItem('t_redeTipo') || 'instagram.com/',
+  redesInput: localStorage.getItem('t_redesInput') || ''
 };
 
 let modalIdx = null;
@@ -308,10 +337,86 @@ function init() {
   updateDropdowns();
   addRow();
   if (state.logo) { mostrarLogo(state.logo); }
-  try {
-    new QRCode(document.getElementById("qrcode"), {
-      text: "https://www.instagram.com/tessinaripedras/", width: 70, height: 70
+
+  // Carregar nome e subtítulo salvos
+  document.getElementById('nomeEmpresa').innerText = state.nomeEmpresa;
+  document.getElementById('subEmpresa').innerText = state.subEmpresa;
+
+  // Salvar ao editar
+  document.getElementById('nomeEmpresa').addEventListener('blur', function() {
+    const v = this.innerText.trim() || 'MegaOnline';
+    this.innerText = v;
+    localStorage.setItem('t_nome', v);
+    document.title = v + ' - Gestão de Romaneio';
+  });
+  document.getElementById('subEmpresa').addEventListener('blur', function() {
+    const v = this.innerText.trim() || 'Gestão de Romaneio';
+    this.innerText = v;
+    localStorage.setItem('t_sub', v);
+  });
+  // Impedir quebra de linha ao pressionar Enter
+  ['nomeEmpresa','subEmpresa'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); this.blur(); }
     });
+  });
+
+  document.title = state.nomeEmpresa + ' - Gestão de Romaneio';
+
+  // Carregar contato salvo
+  if (state.telefone) document.getElementById('telefoneInput').value = state.telefone;
+  if (state.redesInput) document.getElementById('redesInput').value = state.redesInput;
+  document.getElementById('redeTipo').value = state.redeTipo;
+  atualizarContato();
+}
+
+function salvarContato() {
+  const tel = document.getElementById('telefoneInput').value.trim();
+  const tipo = document.getElementById('redeTipo').value;
+  const user = document.getElementById('redesInput').value.trim();
+  localStorage.setItem('t_tel', tel);
+  localStorage.setItem('t_redeTipo', tipo);
+  localStorage.setItem('t_redesInput', user);
+  state.telefone = tel;
+  state.redeTipo = tipo;
+  state.redesInput = user;
+  atualizarContato();
+}
+
+function atualizarContato() {
+  const tel = document.getElementById('telefoneInput').value.trim();
+  const tipo = document.getElementById('redeTipo').value;
+  const user = document.getElementById('redesInput').value.trim();
+
+  // Atualizar exibição do telefone
+  const dispTel = document.getElementById('dispTelefone');
+  dispTel.innerText = tel ? '📞 ' + tel : '';
+
+  // Montar URL e exibição da rede social
+  const dispRede = document.getElementById('dispRede');
+  let url = '';
+  let label = '';
+  if (user) {
+    if (tipo === '') {
+      // Link próprio
+      url = user.startsWith('http') ? user : 'https://' + user;
+      label = url;
+    } else {
+      url = 'https://' + tipo + user;
+      const nomeRede = document.getElementById('redeTipo').options[document.getElementById('redeTipo').selectedIndex].text;
+      label = nomeRede + ': ' + user;
+    }
+    dispRede.innerText = '🔗 ' + label;
+  } else {
+    dispRede.innerText = '';
+  }
+
+  // Atualizar QR code
+  const qrEl = document.getElementById('qrcode');
+  qrEl.innerHTML = '';
+  const qrText = url || tel || window.location.href;
+  try {
+    new QRCode(qrEl, { text: qrText, width: 70, height: 70 });
   } catch(e) {}
 }
 
@@ -348,12 +453,11 @@ function updateDropdowns() {
 function addRow() {
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td class="idx"></td>
+    <td><input type="number" value="1" min="1" class="q" inputmode="numeric" oninput="calcFinal()" style="width:50px"></td>
     <td><select class="mat-drop" style="width:100%;font-size:12px;border:none;background:transparent;min-height:36px"></select></td>
     <td><input type="text" style="width:65px" placeholder="—"></td>
     <td class="col-dim"><input type="number" step="0.01" min="0" class="c" inputmode="decimal" oninput="calcFinal();validarCampo(this)" placeholder="0.00"></td>
     <td class="col-dim"><input type="number" step="0.01" min="0" class="l" inputmode="decimal" oninput="calcFinal();validarCampo(this)" placeholder="0.00"></td>
-    <td><input type="number" value="1" min="1" class="q" inputmode="numeric" oninput="calcFinal()" style="width:50px"></td>
     <td class="aI" style="font-weight:600;white-space:nowrap">0.00</td>
     <td><input type="number" min="0" class="p" inputmode="decimal" oninput="calcFinal();validarCampo(this)" placeholder="0.00" style="width:85px"></td>
     <td class="tI" style="font-weight:bold;color:var(--primary);white-space:nowrap">0,00</td>
@@ -573,9 +677,7 @@ function openTab(id, btn) {
   if (id === 'historico') renderHist();
 }
 
-function reidx() {
-  document.querySelectorAll('.idx').forEach((td, i) => td.innerText = i + 1);
-}
+function reidx() { /* índice removido - qtd está na 1ª coluna */ }
 
 function exportarCSV() {
   let csv = "Numero;Data;Cliente;CNPJ_CPF;Vendedor;Pagamento;Parcelas;Area_m2;Valor_Final;Itens\n";
@@ -602,10 +704,16 @@ function carregarLogo(input) {
   reader.readAsDataURL(file);
 }
 
+function resetarLogo() {
+  localStorage.removeItem('t_logo');
+  state.logo = null;
+  location.reload();
+}
+
 function mostrarLogo(src) {
   const img = document.getElementById('logoImg');
   img.src = src;
-  img.classList.add('visible');
+  img.style.display = 'block';
 }
 
 document.getElementById('romaneioNumero').addEventListener('input', verificarNumDuplicado);
