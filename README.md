@@ -5,7 +5,7 @@ Sistema de romaneio de carregamento para controle de pedras ornamentais.
 ## Acesse online
 🔗 https://marcosdemori.github.io/romaneio/
 
-## Funcionalidades
+## ✨ Funcionalidades
 - Geração de romaneios com numeração automática
 - Cadastro de clientes e materiais
 - Cálculo automático de m², parcelas, IPI e descontos
@@ -15,12 +15,12 @@ Sistema de romaneio de carregamento para controle de pedras ornamentais.
 - Geração de PDF para impressão
 - Funciona offline (dados salvos no navegador)
 
-## Como atualizar o sistema
-1. Edite o arquivo `index.html`
-2. Faça commit e push para a branch `main`
-3. O GitHub Actions faz o deploy automaticamente
-
-## Tecnologias
+## 🚀 Tecnologias
 - HTML, CSS e JavaScript puro
 - QRCode.js
-- GitHub Pages (hospedagem gratuita)
+
+## 👨‍💻 Autor
+- Projeto desenvolvido por Marcos De Mori Laiola.
+
+## 📄 Licença
+Uso livre para projetos pessoais e comerciais.
