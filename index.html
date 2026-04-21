@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MegaOnline - Gestão de Romaneio</title>
+<link id="favicon" rel="icon" type="image/png" href="">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 * {
@@ -2583,10 +2584,25 @@ async function alterarSenhaAdmin() {
 // ─────────────────────────────────────────────
 function mostrarLogo(src) {
   const img = document.getElementById('logoImg');
-  if (!img) return;
+  const fav = document.getElementById('favicon');
+  const loginLogo = document.querySelector('.login-logo');
+  
+  // Define a fonte (se for a padrão, ele usa o seu JPEG atual, se for personalizada usa o PNG)
+  const logoSrc = src || DEFAULT_LOGO;
 
-  img.src = src || DEFAULT_LOGO;
-  img.style.display = 'block';
+  if (img) {
+    img.src = logoSrc;
+    img.style.display = 'block';
+  }
+  
+  if (loginLogo) {
+    loginLogo.src = logoSrc;
+  }
+  
+  // Aplica ao favicon (aba do navegador)
+  if (fav) {
+    fav.href = logoSrc;
+  }
 }
 
 async function carregarLogo(input) {
