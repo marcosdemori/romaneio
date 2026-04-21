@@ -734,6 +734,74 @@ td {
   display: block;
 }
 
+/* MODAL CONFIRMAÇÃO */
+.confirm-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.confirm-bg.open {
+  display: flex;
+}
+
+.confirm-box {
+  background: white;
+  border-radius: 12px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.confirm-box p {
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.confirm-actions button {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  min-width: 90px;
+  transition: 0.2s;
+}
+
+.confirm-cancel {
+  background: #e9ecef;
+  color: #555;
+}
+
+.confirm-cancel:hover {
+  background: #dee2e6;
+}
+
+.confirm-ok {
+  background: var(--danger);
+  color: white;
+}
+
+.confirm-ok:hover {
+  background: #b02a37;
+}
+
 /* TOAST */
 .toast {
   position: fixed;
@@ -1052,6 +1120,17 @@ td {
 
 <!-- TOAST -->
 <div class="toast" id="toastMsg"></div>
+
+<!-- MODAL CONFIRMAÇÃO -->
+<div class="confirm-bg" id="confirmModal">
+  <div class="confirm-box">
+    <p id="confirmMsg"></p>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" onclick="fecharConfirm()">Cancelar</button>
+      <button class="confirm-ok" id="confirmOkBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <!-- TELA DE LOGIN -->
 <div id="loginScreen" class="login-screen">
@@ -1411,6 +1490,26 @@ td {
 </div><!-- /appContainer -->
 
 <script>
+// ─────────────────────────────────────────────
+// MODAL DE CONFIRMAÇÃO
+// ─────────────────────────────────────────────
+function confirmar(msg, onConfirm) {
+  document.getElementById('confirmMsg').textContent = msg;
+  const okBtn = document.getElementById('confirmOkBtn');
+  okBtn.onclick = () => { fecharConfirm(); onConfirm(); };
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+function fecharConfirm() {
+  document.getElementById('confirmModal').classList.remove('open');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('confirmModal')?.addEventListener('click', function(e) {
+    if (e.target === this) fecharConfirm();
+  });
+});
+
 // ─────────────────────────────────────────────
 // SUPABASE CONFIG
 // ─────────────────────────────────────────────
@@ -2156,29 +2255,31 @@ document.getElementById('modalEdit')?.addEventListener('click', function (e) {
 });
 
 async function delHist(id) {
-  try {
-    await sb.delete('romaneios', 'id=eq.' + id);
-    state.historico = state.historico.filter(r => r.id !== id);
-    renderHist();
-    showToast('Romaneio excluído');
-  } catch (e) {
-    console.error(e);
-    showToast('Erro ao excluir', true);
-  }
+    confirmar('Deseja realmente excluir este romaneio? Esta ação não pode ser desfeita.', async () => {
+        try {
+            await sb.delete('romaneios', 'id=eq.' + id);
+            state.historico = state.historico.filter(r => r.id !== id);
+            renderHist();
+            showToast('Romaneio excluído');
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao excluir', true);
+        }
+    });
 }
 
 async function limparHistorico() {
-  if (!confirm('⚠️ Apagar TODO o histórico?')) return;
-
-  try {
-    await sb.delete('romaneios', 'id=not.is.null');
-    state.historico = [];
-    renderHist();
-    showToast('Histórico limpo');
-  } catch (e) {
-    console.error(e);
-    showToast('Erro ao limpar histórico', true);
-  }
+    confirmar('⚠️ ATENÇÃO: Deseja apagar TODO o histórico de romaneios? Esta ação é irreversível.', async () => {
+        try {
+            await sb.delete('romaneios', 'id=not.is.null');
+            state.historico = [];
+            renderHist();
+            showToast('Histórico limpo com sucesso');
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao limpar histórico', true);
+        }
+    });
 }
 
 function exportarCSV() {
@@ -2326,19 +2427,18 @@ async function cadAdd(stateKey, table, inputId, listId, countId) {
 }
 
 async function cadDelByName(stateKey, table, listId, countId, name) {
-  try {
-    await sb.delete(table, 'nome=eq.' + encodeURIComponent(name));
-
-    state[stateKey] = state[stateKey].filter(x => x !== name);
-
-    renderCadList(stateKey, table, listId, countId);
-    updateDropdowns();
-
-    showToast(`"${name}" removido`);
-  } catch (e) {
-    console.error(e);
-    showToast('Erro: ' + e.message, true);
-  }
+    confirmar(`Deseja remover "${name}" da lista de ${stateKey}?`, async () => {
+        try {
+            await sb.delete(table, 'nome=eq.' + encodeURIComponent(name));
+            state[stateKey] = state[stateKey].filter(x => x !== name);
+            renderCadList(stateKey, table, listId, countId);
+            updateDropdowns();
+            showToast(`"${name}" removido`);
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao remover item', true);
+        }
+    });
 }
 
 async function cadAddUser() {
@@ -2375,24 +2475,23 @@ async function cadAddUser() {
 }
 
 async function cadDelUser(idx) {
-  if (state.usuarios.length <= 1) {
-    showToast('Deve haver ao menos um usuário!', true);
-    return;
-  }
+    if (state.usuarios.length <= 1) {
+        showToast('Deve haver ao menos um usuário no sistema!', true);
+        return;
+    }
 
-  const u = state.usuarios[idx];
-
-  try {
-    await sb.delete('usuarios_sistema', 'id=eq.' + u.id);
-
-    state.usuarios.splice(idx, 1);
-
-    renderUserList();
-    showToast(`Usuário "${u.user}" removido`);
-  } catch (e) {
-    console.error(e);
-    showToast('Erro: ' + e.message, true);
-  }
+    const u = state.usuarios[idx];
+    confirmar(`Deseja remover o acesso do usuário "${u.user}"?`, async () => {
+        try {
+            await sb.delete('usuarios_sistema', 'id=eq.' + u.id);
+            state.usuarios.splice(idx, 1);
+            renderUserList();
+            showToast(`Usuário "${u.user}" removido`);
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao remover usuário', true);
+        }
+    });
 }
 
 async function salvarConfigEmpresa() {
@@ -2521,23 +2620,24 @@ async function carregarLogo(input) {
 }
 
 async function resetarLogo() {
-  try {
-    await sb.update('config_empresa', 'id=eq.1', {
-      logo_base64: ''
+    confirmar('Deseja remover a logo atual e voltar para a logo padrão?', async () => {
+        try {
+            await sb.update('config_empresa', 'id=eq.1', {
+                logo_base64: ''
+            });
+
+            state.logo = DEFAULT_LOGO;
+            mostrarLogo(DEFAULT_LOGO);
+
+            const loginLogo = document.querySelector('.login-logo');
+            if (loginLogo) loginLogo.src = DEFAULT_LOGO;
+
+            showToast('Logo restaurada!');
+        } catch (e) {
+            console.error(e);
+            showToast('Erro ao restaurar logo', true);
+        }
     });
-
-    state.logo = DEFAULT_LOGO;
-
-    mostrarLogo(DEFAULT_LOGO);
-
-    const loginLogo = document.querySelector('.login-logo');
-    if (loginLogo) loginLogo.src = DEFAULT_LOGO;
-
-    showToast('Logo restaurada!');
-  } catch (e) {
-    console.error(e);
-    showToast('Erro ao restaurar logo', true);
-  }
 }
 
 function atualizarContato() {
