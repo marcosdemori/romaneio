@@ -1109,6 +1109,31 @@ td {
     width: 100%;
   }
 }
+
+/* Estilo para o input de data */
+.editable-date:focus {
+    outline: 1px solid var(--primary);
+    background: #f0f4ff;
+}
+
+@media print {
+    .only-print {
+        display: inline !important;
+    }
+    input[type="date"].no-print {
+        display: none !important;
+    }
+}
+
+/* Melhora a leitura em telas pequenas para campos numéricos */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
 </style>
 </head>
 <body>
@@ -1190,7 +1215,10 @@ td {
       <div style="text-align:right">
         <div class="romaneio-badge">ROMANEIO DE CARREGAMENTO</div>
         <div class="romaneio-num">Nº <span id="romaneioNumero">001</span></div>
-        <div style="font-size:11px;color:#666;margin-top:4px">Data: <span id="currentDate"></span></div>
+        <div style="font-size:11px;color:#666;margin-top:4px">
+        Data: <input type="date" id="currentDate" class="editable-date no-print" style="border:none; color:#666; font-family:inherit; font-size:11px; width:110px;">
+        <span id="dispDatePrint" class="only-print" style="display:none"></span>
+      </div>
       </div>
     </header>
 
@@ -1643,9 +1671,15 @@ async function loadFromDB() {
 function fazerLogin() {
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
-  const ok = state.usuarios.some(x => x.user === u && x.pass === p);
-  if (ok) {
+  
+  // Busca o usuário no estado carregado do banco
+  const userObj = state.usuarios.find(x => x.user === u && x.pass === p);
+  
+  if (userObj) {
     sessionStorage.setItem('t_logado', '1');
+    sessionStorage.setItem('u_nome', userObj.user);
+    sessionStorage.setItem('u_id', userObj.id);
+    
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appContainer').style.display = 'block';
     init();
@@ -1685,79 +1719,98 @@ async function checkLogin() {
 // INIT
 // ─────────────────────────────────────────────
 function init() {
-  document.getElementById('currentDate').innerText =
-    new Date().toLocaleDateString('pt-BR');
+    // 1. Configuração de Data e Exibição para PDF
+    const inputData = document.getElementById('currentDate');
+    const spanPrint = document.getElementById('dispDatePrint');
+    
+    if (inputData) {
+        if (!inputData.value) {
+            const hoje = new Date();
+            inputData.value = hoje.toISOString().split('T')[0];
+        }
+        
+        const atualizarDataPrint = () => {
+            const valor = inputData.value;
+            if (!valor) return;
+            const [ano, mes, dia] = valor.split('-');
+            if (spanPrint) spanPrint.innerText = `${dia}/${mes}/${ano}`;
+        };
+        
+        inputData.addEventListener('change', atualizarDataPrint);
+        atualizarDataPrint();
+    }
 
-  document.getElementById('romaneioNumero').innerText =
-    String(state.num).padStart(3, '0');
+    // 2. Vendedor Automático (Baseado no usuário logado)
+    const usuarioLogado = sessionStorage.getItem('u_nome');
+    const inputVendedor = document.getElementById('vendedorInput');
+    const dispVendedor = document.getElementById('dispVendedor');
 
-  updateDropdowns();
+    if (usuarioLogado && inputVendedor) {
+        inputVendedor.value = usuarioLogado;
+        if (dispVendedor) dispVendedor.innerText = usuarioLogado;
+    }
 
-  const tbody = document.querySelector('#mainTable tbody');
-  if (tbody && tbody.children.length === 0) {
-    addRow();
-  }
+    // 3. Configuração do número do romaneio (Ex: 001, 002...)
+    const numEl = document.getElementById('romaneioNumero');
+    if (numEl) {
+        numEl.innerText = String(state.num).padStart(3, '0');
+    }
+    
+    // 4. Sincronização de Componentes da Interface
+    updateDropdowns();
 
-  mostrarLogo(state.logo || DEFAULT_LOGO);
+    const tbody = document.querySelector('#mainTable tbody');
+    if (tbody && tbody.children.length === 0) {
+        addRow();
+    }
 
-  document.getElementById('nomeEmpresa').innerText = state.nomeEmpresa || 'MegaOnline';
-  document.getElementById('subEmpresa').innerText = state.subEmpresa || 'Gestão de Romaneio';
+    mostrarLogo(state.logo || DEFAULT_LOGO);
 
-  const nomeEmpresaEl = document.getElementById('nomeEmpresa');
-  const subEmpresaEl = document.getElementById('subEmpresa');
+    // 5. Configurações de Textos Editáveis (Empresa e Subtítulo)
+    const nomeEmpresaEl = document.getElementById('nomeEmpresa');
+    const subEmpresaEl = document.getElementById('subEmpresa');
 
-  if (!nomeEmpresaEl.dataset.bound) {
-    nomeEmpresaEl.addEventListener('blur', async function () {
-      const v = this.innerText.trim() || 'MegaOnline';
-      this.innerText = v;
-      state.nomeEmpresa = v;
-      document.title = v + ' - Gestão de Romaneio';
+    if (nomeEmpresaEl) {
+        nomeEmpresaEl.innerText = state.nomeEmpresa || 'MegaOnline';
+        if (!nomeEmpresaEl.dataset.bound) {
+            nomeEmpresaEl.addEventListener('blur', async function () {
+                const v = this.innerText.trim() || 'MegaOnline';
+                this.innerText = v;
+                state.nomeEmpresa = v;
+                document.title = v + ' - Gestão de Romaneio';
+                try {
+                    await sb.update('config_empresa', 'id=eq.1', { nome_empresa: v });
+                } catch (e) {
+                    console.error(e);
+                    showToast('Erro ao salvar nome');
+                }
+            });
+            nomeEmpresaEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
+            nomeEmpresaEl.dataset.bound = '1';
+        }
+    }
 
-      try {
-        await sb.update('config_empresa', 'id=eq.1', { nome_empresa: v });
-      } catch (e) {
-        console.error(e);
-        showToast('Erro ao salvar nome da empresa');
-      }
-    });
+    if (subEmpresaEl) {
+        subEmpresaEl.innerText = state.subEmpresa || 'Gestão de Romaneio';
+        if (!subEmpresaEl.dataset.bound) {
+            subEmpresaEl.addEventListener('blur', async function () {
+                const v = this.innerText.trim() || 'Gestão de Romaneio';
+                this.innerText = v;
+                state.subEmpresa = v;
+                try {
+                    await sb.update('config_empresa', 'id=eq.1', { subtitulo: v });
+                } catch (e) {
+                    console.error(e);
+                    showToast('Erro ao salvar subtítulo');
+                }
+            });
+            subEmpresaEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
+            subEmpresaEl.dataset.bound = '1';
+        }
+    }
 
-    nomeEmpresaEl.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        this.blur();
-      }
-    });
-
-    nomeEmpresaEl.dataset.bound = '1';
-  }
-
-  if (!subEmpresaEl.dataset.bound) {
-    subEmpresaEl.addEventListener('blur', async function () {
-      const v = this.innerText.trim() || 'Gestão de Romaneio';
-      this.innerText = v;
-      state.subEmpresa = v;
-
-      try {
-        await sb.update('config_empresa', 'id=eq.1', { subtitulo: v });
-      } catch (e) {
-        console.error(e);
-        showToast('Erro ao salvar subtítulo');
-      }
-    });
-
-    subEmpresaEl.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        this.blur();
-      }
-    });
-
-    subEmpresaEl.dataset.bound = '1';
-  }
-
-  document.title = (state.nomeEmpresa || 'MegaOnline') + ' - Gestão de Romaneio';
-
-  atualizarContato();
+    document.title = (state.nomeEmpresa || 'MegaOnline') + ' - Gestão de Romaneio';
+    atualizarContato();
 }
 
 // ─────────────────────────────────────────────
@@ -1967,155 +2020,159 @@ function verificarNumDuplicado() {
 }
 
 async function finalizar() {
-  const clienteSelect = document.getElementById('clienteSelect');
-  const cli = clienteSelect?.value;
+    const clienteSelect = document.getElementById('clienteSelect');
+    const cli = clienteSelect?.value;
 
-  if (!cli) {
-    alert('⚠️ Selecione o cliente antes de finalizar!');
-    return;
-  }
-
-  const rows = document.querySelectorAll('#mainTable tbody tr');
-  if (!rows.length) {
-    alert('⚠️ Adicione ao menos um item antes de finalizar!');
-    return;
-  }
-
-  let invalido = false;
-
-  rows.forEach(row => {
-    ['c', 'a', 'l', 'p'].forEach(cls => {
-      const inp = row.querySelector('.' + cls);
-      if (!inp || !inp.value || parseFloat(inp.value) <= 0) {
-        inp?.classList.add('erro');
-        invalido = true;
-      }
-    });
-
-    const indSel = row.querySelector('.ind-drop');
-    if (!indSel || !indSel.value) {
-      if (indSel) {
-        indSel.style.outline = '2px solid var(--danger)';
-        indSel.style.borderRadius = '4px';
-      }
-      invalido = true;
-    } else {
-      indSel.style.outline = '';
+    if (!cli) {
+        alert('⚠️ Selecione o cliente antes de finalizar!');
+        return;
     }
-  });
 
-  if (invalido) {
-    alert('⚠️ Preencha todos os campos obrigatórios!');
-    return;
-  }
+    const rows = document.querySelectorAll('#mainTable tbody tr');
+    if (!rows.length) {
+        alert('⚠️ Adicione ao menos um item antes de finalizar!');
+        return;
+    }
 
-  if (verificarNumDuplicado()) {
-    const continuar = confirm('Número de romaneio já existe. Continuar?');
-    if (!continuar) return;
-  }
+    // Captura e formata a data selecionada no input
+    const inputDataValue = document.getElementById('currentDate').value;
+    if (!inputDataValue) {
+      alert('⚠️ Por favor, selecione uma data válida!');
+      return;
+    }
+    const [ano, mes, dia] = inputDataValue.split('-');
+    const dataParaSalvar = `${dia}/${mes}/${ano}`;
 
-  const itens = [];
-
-  rows.forEach(row => {
-    const c = parseFloat(row.querySelector('.c')?.value) || 0;
-    const a = parseFloat(row.querySelector('.a')?.value) || 0;
-    const l = parseFloat(row.querySelector('.l')?.value) || 0.02;
-    const q = parseFloat(row.querySelector('.q')?.value) || 0;
-    const p = parseFloat(row.querySelector('.p')?.value) || 0;
-
-    itens.push({
-      material: row.querySelector('.mat-drop')?.value || '',
-      industrializacao: row.querySelector('.ind-drop')?.value || '',
-      lote: row.querySelector('td input[type="text"]')?.value || '',
-      comprimento: c,
-      altura: a,
-      largura: l,
-      quantidade: q,
-      preco: p,
-      area: parseFloat((c * a * q).toFixed(4)),
-      total: parseFloat((c * a * q * p).toFixed(4))
-    });
-  });
-
-  const romaneio = {
-    numero: document.getElementById('romaneioNumero')?.innerText.trim() || '',
-    data_emissao: new Date().toLocaleDateString('pt-BR'),
-    cliente: cli,
-    doc_cliente: document.getElementById('docCliente')?.value || '',
-    vendedor: document.getElementById('vendedorInput')?.value || '',
-    pagamento: document.getElementById('pagSelect')?.value || '',
-    parcelas: parseInt(document.getElementById('qtdParc')?.value) || 1,
-    ipi: parseFloat(document.getElementById('ipiPerc')?.value) || 0,
-    desconto: parseFloat(document.getElementById('descontoF')?.value) || 0,
-    outras_despesas: parseFloat(document.getElementById('outrasExp')?.value) || 0,
-    area_total: parseFloat(document.getElementById('totalM2')?.innerText) || 0,
-    valor_total: parseFloat(
-      (document.getElementById('valorLiquido')?.innerText || '0')
-        .replace(/\./g, '')
-        .replace(',', '.')
-    ) || 0,
-    informacoes: document.getElementById('infoLogInput')?.value || ''
-  };
-
-  showToast('Salvando no banco...', false);
-
-  try {
-    const [saved] = await sb.insert('romaneios', romaneio);
-    const itensComId = itens.map(it => ({
-      ...it,
-      romaneio_id: saved.id
-    }));
-
-    await sb.insert('romaneio_itens', itensComId);
-
-    state.num++;
-    state.historico.unshift({
-      id: saved.id,
-      num: romaneio.numero,
-      data: romaneio.data_emissao,
-      cliente: romaneio.cliente,
-      doc: romaneio.doc_cliente,
-      vendedor: romaneio.vendedor,
-      pagamento: romaneio.pagamento,
-      parcelas: romaneio.parcelas,
-      ipi: romaneio.ipi,
-      desconto: romaneio.desconto,
-      outros: romaneio.outras_despesas,
-      area: romaneio.area_total,
-      valor: romaneio.valor_total,
-      info: romaneio.informacoes,
-      itens: itens.map(it => ({
-        mat: it.material,
-        ind: it.industrializacao,
-        lote: it.lote,
-        c: it.comprimento,
-        a: it.altura,
-        l: it.largura,
-        q: it.quantidade,
-        p: it.preco,
-        area: it.area,
-        total: it.total
-      }))
+    let invalido = false;
+    rows.forEach(row => {
+        ['c', 'a', 'l', 'p'].forEach(cls => {
+            const inp = row.querySelector('.' + cls);
+            if (!inp || !inp.value || parseFloat(inp.value) <= 0) {
+                inp?.classList.add('erro');
+                invalido = true;
+            }
+        });
+        const indSel = row.querySelector('.ind-drop');
+        if (!indSel || !indSel.value) {
+            if (indSel) {
+                indSel.style.outline = '2px solid var(--danger)';
+                indSel.style.borderRadius = '4px';
+            }
+            invalido = true;
+        }
     });
 
-    showToast('✅ Romaneio salvo com sucesso!');
-  } catch (e) {
-    console.error(e);
-    showToast('❌ Erro ao salvar: ' + e.message, true);
-    return;
-  }
+    if (invalido) {
+        alert('⚠️ Preencha todos os campos obrigatórios!');
+        return;
+    }
 
-  const dispInfoLog = document.getElementById('dispInfoLog');
-  if (dispInfoLog) {
-    dispInfoLog.innerText = romaneio.informacoes;
-    dispInfoLog.style.display = romaneio.informacoes ? 'block' : 'none';
-  }
+    if (verificarNumDuplicado()) {
+        const continuar = confirm('Número de romaneio já existe. Continuar?');
+        if (!continuar) return;
+    }
 
-  window.print();
+    const itens = [];
+    rows.forEach(row => {
+        const c = parseFloat(row.querySelector('.c')?.value) || 0;
+        const a = parseFloat(row.querySelector('.a')?.value) || 0;
+        const l = parseFloat(row.querySelector('.l')?.value) || 0.02;
+        const q = parseFloat(row.querySelector('.q')?.value) || 0;
+        const p = parseFloat(row.querySelector('.p')?.value) || 0;
 
-  setTimeout(() => {
-    location.reload();
-  }, 800);
+        itens.push({
+            material: row.querySelector('.mat-drop')?.value || '',
+            industrializacao: row.querySelector('.ind-drop')?.value || '',
+            lote: row.querySelector('td input[type="text"]')?.value || '',
+            comprimento: c,
+            altura: a,
+            largura: l,
+            quantidade: q,
+            preco: p,
+            area: parseFloat((c * a * q).toFixed(4)),
+            total: parseFloat((c * a * q * p).toFixed(4))
+        });
+    });
+
+    const romaneio = {
+        numero: document.getElementById('romaneioNumero')?.innerText.trim() || '',
+        data_emissao: dataParaSalvar, // <--- Aqui usamos a data selecionada
+        cliente: cli,
+        doc_cliente: document.getElementById('docCliente')?.value || '',
+        vendedor: document.getElementById('vendedorInput')?.value || '',
+        pagamento: document.getElementById('pagSelect')?.value || '',
+        parcelas: parseInt(document.getElementById('qtdParc')?.value) || 1,
+        ipi: parseFloat(document.getElementById('ipiPerc')?.value) || 0,
+        desconto: parseFloat(document.getElementById('descontoF')?.value) || 0,
+        outras_despesas: parseFloat(document.getElementById('outrasExp')?.value) || 0,
+        area_total: parseFloat(document.getElementById('totalM2')?.innerText) || 0,
+        valor_total: parseFloat(
+            (document.getElementById('valorLiquido')?.innerText || '0')
+                .replace(/\./g, '')
+                .replace(',', '.')
+        ) || 0,
+        informacoes: document.getElementById('infoLogInput')?.value || ''
+    };
+
+    showToast('Salvando no banco...', false);
+
+    try {
+        const [saved] = await sb.insert('romaneios', romaneio);
+        const itensComId = itens.map(it => ({
+            ...it,
+            romaneio_id: saved.id
+        }));
+
+        await sb.insert('romaneio_itens', itensComId);
+
+        state.num++;
+        state.historico.unshift({
+            id: saved.id,
+            num: romaneio.numero,
+            data: romaneio.data_emissao,
+            cliente: romaneio.cliente,
+            doc: romaneio.doc_cliente,
+            vendedor: romaneio.vendedor,
+            pagamento: romaneio.pagamento,
+            parcelas: romaneio.parcelas,
+            ipi: romaneio.ipi,
+            desconto: romaneio.desconto,
+            outros: romaneio.outras_despesas,
+            area: romaneio.area_total,
+            valor: romaneio.valor_total,
+            info: romaneio.informacoes,
+            itens: itens.map(it => ({
+                mat: it.material,
+                ind: it.industrializacao,
+                lote: it.lote,
+                c: it.comprimento,
+                a: it.altura,
+                l: it.largura,
+                q: it.quantidade,
+                p: it.preco,
+                area: it.area,
+                total: it.total
+            }))
+        });
+
+        showToast('✅ Romaneio salvo com sucesso!');
+    } catch (e) {
+        console.error(e);
+        showToast('❌ Erro ao salvar: ' + e.message, true);
+        return;
+    }
+
+    const dispInfoLog = document.getElementById('dispInfoLog');
+    if (dispInfoLog) {
+        dispInfoLog.innerText = romaneio.informacoes;
+        dispInfoLog.style.display = romaneio.informacoes ? 'block' : 'none';
+    }
+
+    window.print();
+
+    setTimeout(() => {
+        location.reload();
+    }, 800);
 }
 
 // ─────────────────────────────────────────────
@@ -2549,33 +2606,37 @@ async function salvarConfigContato() {
 async function alterarSenhaAdmin() {
   const atual = document.getElementById('cfgSenhaAtual').value;
   const nova = document.getElementById('cfgSenhaNova').value;
+  const userId = sessionStorage.getItem('u_id'); // Pega o ID salvo no login
 
   if (!atual || !nova) {
-    showToast('Preencha a senha atual e a nova!', true);
+    showToast('Preencha os campos de senha!', true);
     return;
   }
 
-  const user = state.usuarios.find(u => u.user === 'admin');
+  // Localiza o usuário no estado local pelo ID
+  const userInState = state.usuarios.find(u => u.id === userId);
 
-  if (!user || user.pass !== atual) {
+  if (!userInState || userInState.pass !== atual) {
     showToast('Senha atual incorreta!', true);
     return;
   }
 
   try {
-    await sb.update('usuarios_sistema', 'usuario=eq.admin', {
+    // Filtramos pelo ID (mais preciso que o nome)
+    await sb.update('usuarios_sistema', `id=eq.${userId}`, {
       senha: nova
     });
 
-    user.pass = nova;
+    // Atualiza a senha no estado local (memória)
+    userInState.pass = nova;
 
     document.getElementById('cfgSenhaAtual').value = '';
     document.getElementById('cfgSenhaNova').value = '';
 
-    showToast('✅ Senha alterada!');
+    showToast('✅ Senha alterada com sucesso!');
   } catch (e) {
-    console.error(e);
-    showToast('Erro ao alterar senha', true);
+    console.error("Erro Supabase:", e);
+    showToast('Erro técnico ao salvar senha', true);
   }
 }
 
