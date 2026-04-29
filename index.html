@@ -988,6 +988,25 @@ td {
   margin-left: 6px;
 }
 
+/* ─── FAIXA DE IDENTIFICAÇÃO DO PDF ─── */
+.pdf-id-bar {
+  display: none; /* oculta na tela, aparece só no print */
+  background: var(--primary);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.pdf-id-bar span {
+  opacity: 0.75;
+  font-weight: 400;
+  margin: 0 8px;
+}
+
 /* PRINT */
 @media print {
   .no-print {
@@ -1033,6 +1052,13 @@ td {
 
   .edit-hint {
     display: none !important;
+  }
+
+  /* Exibe a faixa de identificação no PDF */
+  .pdf-id-bar {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
   }
 }
 
@@ -1198,6 +1224,15 @@ input::-webkit-inner-spin-button {
 
   <!-- ABA NOVO ROMANEIO -->
   <div id="novo" class="tab-content active">
+
+    <!-- ═══ FAIXA DE IDENTIFICAÇÃO — visível apenas no PDF ═══ -->
+    <div class="pdf-id-bar" id="pdfIdBar">
+      📄 Romaneio Nº <strong id="pdfIdNumero">001</strong>
+      <span>|</span>
+      Cliente: <strong id="pdfIdCliente">—</strong>
+    </div>
+    <!-- ════════════════════════════════════════════════════════ -->
+
     <header class="main-header">
       <div class="logo-area">
         <img id="logoImg" class="logo-img" src="" alt="Logo" style="display:none">
@@ -1242,6 +1277,9 @@ input::-webkit-inner-spin-button {
         <label>Pagamento</label>
         <select id="pagSelect" onchange="document.getElementById('dispPagamento').innerText=this.value">
           <option>Boleto</option>
+          <option>Cheque</option>
+          <option>À vista</option>
+          <option>À prazo</option>
           <option>Pix</option>
           <option>Cartão</option>
           <option>Dinheiro</option>
@@ -1672,7 +1710,6 @@ function fazerLogin() {
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
   
-  // Busca o usuário no estado carregado do banco
   const userObj = state.usuarios.find(x => x.user === u && x.pass === p);
   
   if (userObj) {
@@ -1700,7 +1737,6 @@ async function checkLogin() {
   const ok = await loadFromDB();
   if (!ok) return;
 
-  // Atualiza tela de login com dados da empresa
   document.getElementById('loginNome').innerText = state.nomeEmpresa;
 
   const loginLogo = document.querySelector('.login-logo');
@@ -1719,7 +1755,7 @@ async function checkLogin() {
 // INIT
 // ─────────────────────────────────────────────
 function init() {
-    // 1. Configuração de Data e Exibição para PDF
+    // 1. Data
     const inputData = document.getElementById('currentDate');
     const spanPrint = document.getElementById('dispDatePrint');
     
@@ -1740,7 +1776,7 @@ function init() {
         atualizarDataPrint();
     }
 
-    // 2. Vendedor Automático (Baseado no usuário logado)
+    // 2. Vendedor automático
     const usuarioLogado = sessionStorage.getItem('u_nome');
     const inputVendedor = document.getElementById('vendedorInput');
     const dispVendedor = document.getElementById('dispVendedor');
@@ -1750,13 +1786,13 @@ function init() {
         if (dispVendedor) dispVendedor.innerText = usuarioLogado;
     }
 
-    // 3. Configuração do número do romaneio (Ex: 001, 002...)
+    // 3. Número do romaneio
     const numEl = document.getElementById('romaneioNumero');
     if (numEl) {
         numEl.innerText = String(state.num).padStart(3, '0');
     }
-    
-    // 4. Sincronização de Componentes da Interface
+
+    // 4. Sincronização
     updateDropdowns();
 
     const tbody = document.querySelector('#mainTable tbody');
@@ -1766,7 +1802,7 @@ function init() {
 
     mostrarLogo(state.logo || DEFAULT_LOGO);
 
-    // 5. Configurações de Textos Editáveis (Empresa e Subtítulo)
+    // 5. Textos editáveis
     const nomeEmpresaEl = document.getElementById('nomeEmpresa');
     const subEmpresaEl = document.getElementById('subEmpresa');
 
@@ -1823,6 +1859,9 @@ function syncCliente() {
   if (dispCliente) {
     dispCliente.innerText = clienteSelect?.value || '---';
   }
+
+  // ── Atualiza a faixa de identificação do PDF ──
+  atualizarPdfIdBar();
 }
 
 function updateDropdowns() {
@@ -1866,6 +1905,23 @@ function updateDropdowns() {
       select.value = valorAtual;
     }
   });
+}
+
+// ─────────────────────────────────────────────
+// FAIXA DE IDENTIFICAÇÃO DO PDF
+// Atualiza o elemento #pdfIdBar e o document.title
+// antes de imprimir, para que o PDF mostre
+// "Romaneio Nº 001 – Cliente: Fulano de Tal"
+// ─────────────────────────────────────────────
+function atualizarPdfIdBar() {
+  const num    = document.getElementById('romaneioNumero')?.innerText.trim() || '---';
+  const cli    = document.getElementById('clienteSelect')?.value || '—';
+
+  const idNumEl = document.getElementById('pdfIdNumero');
+  const idCliEl = document.getElementById('pdfIdCliente');
+
+  if (idNumEl) idNumEl.textContent = num;
+  if (idCliEl) idCliEl.textContent = cli || '—';
 }
 
 // ─────────────────────────────────────────────
@@ -2034,7 +2090,6 @@ async function finalizar() {
         return;
     }
 
-    // Captura e formata a data selecionada no input
     const inputDataValue = document.getElementById('currentDate').value;
     if (!inputDataValue) {
       alert('⚠️ Por favor, selecione uma data válida!');
@@ -2094,8 +2149,10 @@ async function finalizar() {
         });
     });
 
+    const numRomaneio = document.getElementById('romaneioNumero')?.innerText.trim() || '';
+
     const romaneio = {
-        numero: document.getElementById('romaneioNumero')?.innerText.trim() || '',
+        numero: numRomaneio,
         data_emissao: dataParaSalvar,
         cliente: cli,
         doc_cliente: document.getElementById('docCliente')?.value || '',
@@ -2168,9 +2225,19 @@ async function finalizar() {
         dispInfoLog.style.display = romaneio.informacoes ? 'block' : 'none';
     }
 
+    // ── Atualiza a faixa de ID e o título do documento antes de imprimir ──
+    atualizarPdfIdBar();
+
+    // Título do documento = nome que aparece no "Salvar PDF" do browser
+    const nomeEmpresaAtual = state.nomeEmpresa || 'MegaOnline';
+    const cliParaPdf = cli.replace(/[/\\?%*:|"<>]/g, '-'); // sanitiza caracteres inválidos
+    document.title = `Romaneio_${String(numRomaneio).padStart(3,'0')}_${cliParaPdf}`;
+
     window.print();
 
+    // Restaura o título original após o print
     setTimeout(() => {
+        document.title = nomeEmpresaAtual + ' - Gestão de Romaneio';
         location.reload();
     }, 800);
 }
@@ -2606,14 +2673,13 @@ async function salvarConfigContato() {
 async function alterarSenhaAdmin() {
   const atual = document.getElementById('cfgSenhaAtual').value;
   const nova = document.getElementById('cfgSenhaNova').value;
-  const userId = sessionStorage.getItem('u_id'); // Pega o ID salvo no login
+  const userId = sessionStorage.getItem('u_id');
 
   if (!atual || !nova) {
     showToast('Preencha os campos de senha!', true);
     return;
   }
 
-  // Localiza o usuário no estado local pelo ID
   const userInState = state.usuarios.find(u => u.id === userId);
 
   if (!userInState || userInState.pass !== atual) {
@@ -2622,12 +2688,10 @@ async function alterarSenhaAdmin() {
   }
 
   try {
-    // Filtramos pelo ID (mais preciso que o nome)
     await sb.update('usuarios_sistema', `id=eq.${userId}`, {
       senha: nova
     });
 
-    // Atualiza a senha no estado local (memória)
     userInState.pass = nova;
 
     document.getElementById('cfgSenhaAtual').value = '';
@@ -2648,7 +2712,6 @@ function mostrarLogo(src) {
   const fav = document.getElementById('favicon');
   const loginLogo = document.querySelector('.login-logo');
   
-  // Define a fonte (se for a padrão, ele usa o seu JPEG atual, se for personalizada usa o PNG)
   const logoSrc = src || DEFAULT_LOGO;
 
   if (img) {
@@ -2660,7 +2723,6 @@ function mostrarLogo(src) {
     loginLogo.src = logoSrc;
   }
   
-  // Aplica ao favicon (aba do navegador)
   if (fav) {
     fav.href = logoSrc;
   }
