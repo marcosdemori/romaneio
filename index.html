@@ -1207,15 +1207,16 @@ input::-webkit-inner-spin-button {
       <h3>Detalhes do Romaneio</h3>
       <div id="modalContent"></div>
       <div class="modal-footer">
-        <button class="btn-sm" style="background:#6c757d;color:white" onclick="fecharModal()">Fechar</button>
-        <button class="btn-sm" style="background:var(--danger);color:white" id="btnDelModal">Excluir</button>
+          <button class="btn-sm" style="background:#6c757d;color:white" onclick="fecharModal()">Fechar</button>
+          <button class="btn-sm" style="background:var(--primary);color:white" id="btnImprimirHist">🖨️ Reimprimir PDF</button>
+          <button class="btn-sm" style="background:var(--danger);color:white" id="btnDelModal">Excluir</button>
       </div>
     </div>
   </div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:18px" class="no-print">
     <div class="tabs" style="margin:0;flex:1">
-      <button class="tab-btn active" onclick="openTab('novo',this)">Novo Romaneio</button>
+      <button class="tab-btn active" onclick="limparFormulario(); openTab('novo', this)">Novo Romaneio</button>
       <button class="tab-btn" onclick="openTab('cadastros',this)">Cadastros</button>
       <button class="tab-btn" onclick="openTab('historico',this)">Histórico e Gestão</button>
     </div>
@@ -1543,7 +1544,7 @@ input::-webkit-inner-spin-button {
       Clique em uma linha para ver detalhes
     </p>
 
-    <div class="config-section no-print" style="margin-top:16px;border-color:#f5c6cb">
+    <!-- <div class="config-section no-print" style="margin-top:16px;border-color:#f5c6cb">
       <div class="config-section-header" style="background:#fff5f5;color:var(--danger)">
         ⚠️ Zona de Perigo
       </div>
@@ -1552,7 +1553,7 @@ input::-webkit-inner-spin-button {
           🗑️ Limpar Histórico
         </button>
       </div>
-    </div>
+    </div> -->
   </div>
 </div><!-- /appContainer -->
 
@@ -2323,6 +2324,8 @@ function abrirModal(id) {
         </table>
       </div>`;
   }
+  
+  document.getElementById('btnImprimirHist').onclick = () => reimprimirDoHistorico(id);
 
   document.getElementById('modalContent').innerHTML = `
     <div style="
@@ -2435,6 +2438,112 @@ function openTab(id, btn) {
 
   if (id === 'historico') renderHist();
   if (id === 'cadastros') renderCadastros();
+}
+
+function reimprimirDoHistorico(id) {
+    const r = state.historico.find(x => x.id === id);
+    if (!r) return;
+
+    // 1. Preenche o cabeçalho
+    document.getElementById('romaneioNumero').innerText = r.num;
+    document.getElementById('currentDate').value = r.data.split('/').reverse().join('-'); // Converte DD/MM/AAAA para YYYY-MM-DD
+    document.getElementById('clienteSelect').value = r.cliente;
+    document.getElementById('docCliente').value = r.doc;
+    document.getElementById('vendedorInput').value = r.vendedor;
+    document.getElementById('pagSelect').value = r.pagamento;
+    document.getElementById('qtdParc').value = r.parcelas;
+    document.getElementById('ipiPerc').value = r.ipi;
+    document.getElementById('outrasExp').value = r.outros;
+    document.getElementById('descontoF').value = r.desconto;
+    document.getElementById('infoLogInput').value = r.info;
+    
+    // Sincroniza labels visuais
+    syncCliente();
+    document.getElementById('dispVendedor').innerText = r.vendedor;
+    document.getElementById('dispPagamento').innerText = r.pagamento;
+    document.getElementById('dispInfoLog').innerText = r.info;
+    document.getElementById('dispInfoLog').style.display = r.info ? 'block' : 'none';
+
+    // 2. Limpa a tabela atual e preenche com os itens do histórico
+    const tbody = document.querySelector('#mainTable tbody');
+    tbody.innerHTML = '';
+    
+    r.itens.forEach(it => {
+        addRow(); // Chama sua função existente para criar a linha
+        const lastRow = tbody.lastElementChild;
+        lastRow.querySelector('.mat-drop').value = it.mat;
+        lastRow.querySelector('.ind-drop').value = it.ind;
+        lastRow.querySelector('td input[type="text"]').value = it.lote;
+        lastRow.querySelector('.c').value = it.c;
+        lastRow.querySelector('.a').value = it.a;
+        lastRow.querySelector('.l').value = it.l;
+        lastRow.querySelector('.q').value = it.q;
+        lastRow.querySelector('.p').value = it.p;
+    });
+
+    // 3. Recalcula totais e dispara o Print
+    calcFinal();
+    fecharModal();
+    openTab('novo'); // Muda para a aba de visualização
+    
+    // Bloqueia o botão para evitar salvar por cima do histórico
+    const btnFinalizar = document.getElementById('btnFinalizar');
+    btnFinalizar.disabled = true;
+    btnFinalizar.innerText = "SISTEMA EM MODO DE REIMPRESSÃO";
+    btnFinalizar.style.background = "#636e72";
+
+    // Dispara o Print
+    setTimeout(() => {
+        window.print();
+        
+        // Limpeza automática e restauração do botão após a saída da impressão
+        btnFinalizar.disabled = false;
+        btnFinalizar.innerText = "✔ FINALIZAR E GERAR PDF";
+        btnFinalizar.style.background = "var(--primary)";
+        
+        limparFormulario(); // Limpa tudo para o próximo romaneio
+        showToast("Formulário resetado para novo romaneio");
+    }, 500);
+}
+
+function limparFormulario() {
+    // 1. Resetar o número para o próximo disponível
+    if (state.historico.length > 0) {
+        const nums = state.historico.map(r => parseInt(r.num) || 0);
+        state.num = Math.max(...nums) + 1;
+    } else {
+        state.num = 1;
+    }
+    document.getElementById('romaneioNumero').innerText = String(state.num).padStart(3, '0');
+
+    // 2. Resetar campos de texto e selects
+    document.getElementById('clienteSelect').value = '';
+    document.getElementById('docCliente').value = '';
+    document.getElementById('pagSelect').value = 'Boleto';
+    document.getElementById('qtdParc').value = '1';
+    document.getElementById('ipiPerc').value = '0';
+    document.getElementById('outrasExp').value = '0';
+    document.getElementById('descontoF').value = '0';
+    document.getElementById('infoLogInput').value = '';
+
+    // 3. Resetar data para hoje
+    const inputData = document.getElementById('currentDate');
+    const hoje = new Date();
+    inputData.value = hoje.toISOString().split('T')[0];
+    
+    // 4. Sincronizar labels visuais
+    syncCliente();
+    document.getElementById('dispVendedor').innerText = sessionStorage.getItem('u_nome') || '---';
+    document.getElementById('dispPagamento').innerText = 'Boleto';
+    document.getElementById('dispInfoLog').style.display = 'none';
+
+    // 5. Limpar a tabela e adicionar uma linha em branco
+    const tbody = document.querySelector('#mainTable tbody');
+    tbody.innerHTML = '';
+    addRow();
+
+    // 6. Recalcular totais (zerar)
+    calcFinal();
 }
 
 // ─────────────────────────────────────────────
