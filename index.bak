@@ -2,11 +2,10 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MegaOnline - Gestão de Romaneio</title>
 <link id="favicon" rel="icon" type="image/png" href="">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 * {
   box-sizing: border-box;
@@ -1008,24 +1007,6 @@ td {
   margin: 0 8px;
 }
 
-/* GERAÇÃO DE PDF REAL PARA COMPARTILHAMENTO */
-body.generating-pdf .no-print {
-  display: none !important;
-}
-body.generating-pdf .pdf-id-bar {
-  display: flex !important;
-  align-items: center;
-  gap: 6px;
-}
-body.generating-pdf #appContainer {
-  box-shadow: none !important;
-  border: none !important;
-}
-body.generating-pdf .table-wrapper {
-  overflow: visible !important;
-  border: none !important;
-}
-
 /* PRINT */
 @media print {
   .no-print {
@@ -1179,162 +1160,6 @@ input::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
-
-
-/* ─── OTIMIZAÇÕES MOBILE / IPHONE ─── */
-html {
-  -webkit-text-size-adjust: 100%;
-  scroll-behavior: smooth;
-}
-
-body {
-  overflow-x: hidden;
-  padding-left: max(8px, env(safe-area-inset-left));
-  padding-right: max(8px, env(safe-area-inset-right));
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
-}
-
-button,
-input,
-select,
-textarea {
-  touch-action: manipulation;
-}
-
-.action-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.action-row .btn-final,
-.action-row .btn-share {
-  margin-top: 0;
-}
-
-.btn-share {
-  background: #128c7e;
-  color: white;
-  width: 100%;
-  height: 52px;
-  border-radius: 8px;
-  border: none;
-  font-size: 15px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: 0.2s;
-}
-
-.btn-share:hover {
-  filter: brightness(0.95);
-}
-
-@media (max-width: 700px) {
-  .container,
-  #appContainer {
-    padding: 14px !important;
-    border-radius: 10px !important;
-  }
-
-  .main-header {
-    align-items: stretch;
-  }
-
-  .main-header > div:last-child {
-    text-align: left !important;
-    width: 100%;
-    background: #f8fafc;
-    border-radius: 10px;
-    padding: 10px 12px;
-  }
-
-  .tabs {
-    display: grid;
-    grid-template-columns: 1fr;
-    width: 100%;
-  }
-
-  .tab-btn {
-    width: 100%;
-    min-height: 44px;
-    font-size: 14px;
-  }
-
-  input,
-  select,
-  textarea {
-    font-size: 16px; /* evita zoom automático do Safari/iPhone */
-    min-height: 44px;
-  }
-
-  #mainTable input,
-  #mainTable select,
-  .ind-drop {
-    font-size: 16px !important;
-    min-height: 44px !important;
-  }
-
-  .table-wrapper {
-    margin-left: -2px;
-    margin-right: -2px;
-  }
-
-  .summary-line {
-    align-items: flex-start;
-  }
-
-  .summary-line input {
-    max-width: 120px;
-  }
-
-  .action-row {
-    grid-template-columns: 1fr;
-    position: sticky;
-    bottom: max(8px, env(safe-area-inset-bottom));
-    z-index: 50;
-    background: rgba(255,255,255,.96);
-    padding: 8px 0 0;
-    backdrop-filter: blur(8px);
-  }
-
-  .btn-final,
-  .btn-share,
-  .btn-add {
-    min-height: 52px;
-    font-size: 15px;
-  }
-
-  .toast {
-    bottom: max(18px, env(safe-area-inset-bottom));
-    white-space: normal;
-    text-align: center;
-  }
-}
-
-@media (max-width: 390px) {
-  body {
-    padding: 6px;
-  }
-
-  .logo-area {
-    gap: 8px;
-  }
-
-  .logo-img {
-    width: 48px;
-    height: 48px;
-  }
-
-  .config-panel {
-    grid-template-columns: 1fr;
-  }
-
-  .hist-stats {
-    grid-template-columns: 1fr;
-  }
-}
-
 </style>
 </head>
 <body>
@@ -1384,7 +1209,6 @@ textarea {
       <div class="modal-footer">
           <button class="btn-sm" style="background:#6c757d;color:white" onclick="fecharModal()">Fechar</button>
           <button class="btn-sm" style="background:var(--primary);color:white" id="btnImprimirHist">🖨️ Reimprimir PDF</button>
-          <button class="btn-sm" style="background:#198754;color:white" id="btnCompartilharHist">📤 Compartilhar</button>
           <button class="btn-sm" style="background:var(--danger);color:white" id="btnDelModal">Excluir</button>
       </div>
     </div>
@@ -1566,10 +1390,7 @@ textarea {
       </div>
     </div>
 
-    <div class="action-row no-print">
-      <button class="btn-share" id="btnCompartilhar" onclick="compartilharDocumento()">📤 COMPARTILHAR PDF</button>
-      <button class="btn-final" id="btnFinalizar" onclick="finalizar()">✔ FINALIZAR E GERAR PDF</button>
-    </div>
+    <button class="btn-final no-print" id="btnFinalizar" onclick="finalizar()">✔ FINALIZAR E GERAR PDF</button>
   </div>
 
   <!-- ABA CADASTROS -->
@@ -2087,251 +1908,6 @@ function updateDropdowns() {
   });
 }
 
-
-// ─────────────────────────────────────────────
-// NOME DO PDF / COMPARTILHAMENTO
-// ─────────────────────────────────────────────
-function limparNomeArquivo(txt) {
-  return String(txt || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/&/g, 'E')
-    .replace(/[^a-zA-Z0-9_-]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .toUpperCase() || 'CLIENTE';
-}
-
-function getNomeArquivoPdf() {
-  const cliente = document.getElementById('clienteSelect')?.value
-    || document.getElementById('dispCliente')?.innerText
-    || 'CLIENTE';
-  const numero = document.getElementById('romaneioNumero')?.innerText.trim() || String(state.num || 1).padStart(3, '0');
-  return `${limparNomeArquivo(cliente)}_${String(numero).padStart(3, '0')}.pdf`;
-}
-
-function prepararTituloPdf() {
-  atualizarPdfIdBar();
-  document.title = getNomeArquivoPdf();
-}
-
-function validarEColetarRomaneio() {
-  const clienteSelect = document.getElementById('clienteSelect');
-  const cli = clienteSelect?.value;
-
-  if (!cli) {
-    alert('⚠️ Selecione o cliente antes de finalizar!');
-    return null;
-  }
-
-  const rows = document.querySelectorAll('#mainTable tbody tr');
-  if (!rows.length) {
-    alert('⚠️ Adicione ao menos um item antes de finalizar!');
-    return null;
-  }
-
-  const inputDataValue = document.getElementById('currentDate').value;
-  if (!inputDataValue) {
-    alert('⚠️ Por favor, selecione uma data válida!');
-    return null;
-  }
-
-  let invalido = false;
-  rows.forEach(row => {
-    ['c', 'a', 'l', 'p'].forEach(cls => {
-      const inp = row.querySelector('.' + cls);
-      if (!inp || !inp.value || parseFloat(inp.value) <= 0) {
-        inp?.classList.add('erro');
-        invalido = true;
-      }
-    });
-    const indSel = row.querySelector('.ind-drop');
-    if (!indSel || !indSel.value) {
-      if (indSel) {
-        indSel.style.outline = '2px solid var(--danger)';
-        indSel.style.borderRadius = '4px';
-      }
-      invalido = true;
-    }
-  });
-
-  if (invalido) {
-    alert('⚠️ Preencha todos os campos obrigatórios!');
-    return null;
-  }
-
-  const [ano, mes, dia] = inputDataValue.split('-');
-  const dataParaSalvar = `${dia}/${mes}/${ano}`;
-  const itens = [];
-
-  rows.forEach(row => {
-    const c = parseFloat(row.querySelector('.c')?.value) || 0;
-    const a = parseFloat(row.querySelector('.a')?.value) || 0;
-    const l = parseFloat(row.querySelector('.l')?.value) || 0.02;
-    const q = parseFloat(row.querySelector('.q')?.value) || 0;
-    const p = parseFloat(row.querySelector('.p')?.value) || 0;
-
-    itens.push({
-      material: row.querySelector('.mat-drop')?.value || '',
-      industrializacao: row.querySelector('.ind-drop')?.value || '',
-      lote: row.querySelector('td input[type="text"]')?.value || '',
-      comprimento: c,
-      altura: a,
-      largura: l,
-      quantidade: q,
-      preco: p,
-      area: parseFloat((c * a * q).toFixed(4)),
-      total: parseFloat((c * a * q * p).toFixed(4))
-    });
-  });
-
-  const numRomaneio = document.getElementById('romaneioNumero')?.innerText.trim() || '';
-  const romaneio = {
-    numero: numRomaneio,
-    data_emissao: dataParaSalvar,
-    cliente: cli,
-    doc_cliente: document.getElementById('docCliente')?.value || '',
-    vendedor: document.getElementById('vendedorInput')?.value || '',
-    pagamento: document.getElementById('pagSelect')?.value || '',
-    parcelas: parseInt(document.getElementById('qtdParc')?.value) || 1,
-    ipi: parseFloat(document.getElementById('ipiPerc')?.value) || 0,
-    desconto: parseFloat(document.getElementById('descontoF')?.value) || 0,
-    outras_despesas: parseFloat(document.getElementById('outrasExp')?.value) || 0,
-    area_total: parseFloat(document.getElementById('totalM2')?.innerText) || 0,
-    valor_total: parseFloat((document.getElementById('valorLiquido')?.innerText || '0').replace(/\./g, '').replace(',', '.')) || 0,
-    informacoes: document.getElementById('infoLogInput')?.value || ''
-  };
-
-  return { romaneio, itens };
-}
-
-async function salvarRomaneioAtual() {
-  const dados = validarEColetarRomaneio();
-  if (!dados) return null;
-
-  if (verificarNumDuplicado()) {
-    const continuar = confirm('Número de romaneio já existe. Continuar?');
-    if (!continuar) return null;
-  }
-
-  const { romaneio, itens } = dados;
-  const [saved] = await sb.insert('romaneios', romaneio);
-  const itensComId = itens.map(it => ({ ...it, romaneio_id: saved.id }));
-  await sb.insert('romaneio_itens', itensComId);
-
-  state.num++;
-  state.historico.unshift({
-    id: saved.id,
-    num: romaneio.numero,
-    data: romaneio.data_emissao,
-    cliente: romaneio.cliente,
-    doc: romaneio.doc_cliente,
-    vendedor: romaneio.vendedor,
-    pagamento: romaneio.pagamento,
-    parcelas: romaneio.parcelas,
-    ipi: romaneio.ipi,
-    desconto: romaneio.desconto,
-    outros: romaneio.outras_despesas,
-    area: romaneio.area_total,
-    valor: romaneio.valor_total,
-    info: romaneio.informacoes,
-    itens: itens.map(it => ({
-      mat: it.material, ind: it.industrializacao, lote: it.lote,
-      c: it.comprimento, a: it.altura, l: it.largura, q: it.quantidade,
-      p: it.preco, area: it.area, total: it.total
-    }))
-  });
-
-  return { saved, romaneio, itens };
-}
-
-async function gerarPdfBlob() {
-  if (typeof html2pdf === 'undefined') {
-    throw new Error('Biblioteca de PDF não carregada. Verifique a conexão com a internet.');
-  }
-
-  prepararTituloPdf();
-  const dispInfoLog = document.getElementById('dispInfoLog');
-  const info = document.getElementById('infoLogInput')?.value || '';
-  if (dispInfoLog) {
-    dispInfoLog.innerText = info;
-    dispInfoLog.style.display = info ? 'block' : 'none';
-  }
-
-  document.body.classList.add('generating-pdf');
-  await new Promise(resolve => requestAnimationFrame(resolve));
-
-  try {
-    const element = document.getElementById('novo');
-    const opt = {
-      margin: [8, 8, 8, 8],
-      filename: getNomeArquivoPdf(),
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'] }
-    };
-    return await html2pdf().set(opt).from(element).outputPdf('blob');
-  } finally {
-    document.body.classList.remove('generating-pdf');
-  }
-}
-
-async function compartilharDocumento() {
-  const nomeArquivo = getNomeArquivoPdf();
-  const btn = document.getElementById('btnCompartilhar');
-  const oldText = btn?.innerText;
-
-  try {
-    if (btn) {
-      btn.disabled = true;
-      btn.innerText = 'GERANDO PDF...';
-    }
-
-    showToast('Salvando pedido em aberto...', false);
-    const resultadoSalvar = await salvarRomaneioAtual();
-
-    // Se a validação falhar ou o usuário cancelar por romaneio duplicado,
-    // interrompe completamente: não gera PDF e não compartilha.
-    if (!resultadoSalvar) {
-      showToast('Compartilhamento cancelado. Preencha os campos obrigatórios.', true);
-      return;
-    }
-
-    showToast('Gerando PDF para compartilhar...', false);
-    const pdfBlob = await gerarPdfBlob();
-    const pdfFile = new File([pdfBlob], nomeArquivo, { type: 'application/pdf' });
-
-    if (navigator.canShare && navigator.canShare({ files: [pdfFile] }) && navigator.share) {
-      await navigator.share({
-        title: nomeArquivo,
-        text: `Romaneio ${document.getElementById('romaneioNumero')?.innerText.trim() || ''}`,
-        files: [pdfFile]
-      });
-      showToast('PDF compartilhado!');
-      setTimeout(() => location.reload(), 800);
-      return;
-    }
-
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(pdfBlob);
-    a.download = nomeArquivo;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-    showToast('PDF baixado. Anexe o arquivo no WhatsApp/Email.');
-  } catch (e) {
-    if (e && e.name === 'AbortError') return;
-    console.error(e);
-    showToast('Não foi possível gerar/compartilhar o PDF: ' + (e.message || e), true);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerText = oldText || '📤 COMPARTILHAR PDF';
-    }
-  }
-}
-
-window.addEventListener('beforeprint', prepararTituloPdf);
-
 // ─────────────────────────────────────────────
 // FAIXA DE IDENTIFICAÇÃO DO PDF
 // Atualiza o elemento #pdfIdBar e o document.title
@@ -2501,44 +2077,170 @@ function verificarNumDuplicado() {
 }
 
 async function finalizar() {
-  const nomeEmpresaAtual = state.nomeEmpresa || 'MegaOnline';
-  const btn = document.getElementById('btnFinalizar');
-  const oldText = btn?.innerText;
+    const clienteSelect = document.getElementById('clienteSelect');
+    const cli = clienteSelect?.value;
 
-  try {
-    if (btn) {
-      btn.disabled = true;
-      btn.innerText = 'SALVANDO...';
+    if (!cli) {
+        alert('⚠️ Selecione o cliente antes de finalizar!');
+        return;
     }
 
-    showToast('Salvando no banco...', false);
-    const resultado = await salvarRomaneioAtual();
-    if (!resultado) return;
+    const rows = document.querySelectorAll('#mainTable tbody tr');
+    if (!rows.length) {
+        alert('⚠️ Adicione ao menos um item antes de finalizar!');
+        return;
+    }
 
-    showToast('✅ Romaneio salvo com sucesso!');
+    const inputDataValue = document.getElementById('currentDate').value;
+    if (!inputDataValue) {
+      alert('⚠️ Por favor, selecione uma data válida!');
+      return;
+    }
+    const [ano, mes, dia] = inputDataValue.split('-');
+    const dataParaSalvar = `${dia}/${mes}/${ano}`;
+
+    let invalido = false;
+    rows.forEach(row => {
+        ['c', 'a', 'l', 'p'].forEach(cls => {
+            const inp = row.querySelector('.' + cls);
+            if (!inp || !inp.value || parseFloat(inp.value) <= 0) {
+                inp?.classList.add('erro');
+                invalido = true;
+            }
+        });
+        const indSel = row.querySelector('.ind-drop');
+        if (!indSel || !indSel.value) {
+            if (indSel) {
+                indSel.style.outline = '2px solid var(--danger)';
+                indSel.style.borderRadius = '4px';
+            }
+            invalido = true;
+        }
+    });
+
+    if (invalido) {
+        alert('⚠️ Preencha todos os campos obrigatórios!');
+        return;
+    }
+
+    if (verificarNumDuplicado()) {
+        const continuar = confirm('Número de romaneio já existe. Continuar?');
+        if (!continuar) return;
+    }
+
+    const itens = [];
+    rows.forEach(row => {
+        const c = parseFloat(row.querySelector('.c')?.value) || 0;
+        const a = parseFloat(row.querySelector('.a')?.value) || 0;
+        const l = parseFloat(row.querySelector('.l')?.value) || 0.02;
+        const q = parseFloat(row.querySelector('.q')?.value) || 0;
+        const p = parseFloat(row.querySelector('.p')?.value) || 0;
+
+        itens.push({
+            material: row.querySelector('.mat-drop')?.value || '',
+            industrializacao: row.querySelector('.ind-drop')?.value || '',
+            lote: row.querySelector('td input[type="text"]')?.value || '',
+            comprimento: c,
+            altura: a,
+            largura: l,
+            quantidade: q,
+            preco: p,
+            area: parseFloat((c * a * q).toFixed(4)),
+            total: parseFloat((c * a * q * p).toFixed(4))
+        });
+    });
+
+    const numRomaneio = document.getElementById('romaneioNumero')?.innerText.trim() || '';
+
+    const romaneio = {
+        numero: numRomaneio,
+        data_emissao: dataParaSalvar,
+        cliente: cli,
+        doc_cliente: document.getElementById('docCliente')?.value || '',
+        vendedor: document.getElementById('vendedorInput')?.value || '',
+        pagamento: document.getElementById('pagSelect')?.value || '',
+        parcelas: parseInt(document.getElementById('qtdParc')?.value) || 1,
+        ipi: parseFloat(document.getElementById('ipiPerc')?.value) || 0,
+        desconto: parseFloat(document.getElementById('descontoF')?.value) || 0,
+        outras_despesas: parseFloat(document.getElementById('outrasExp')?.value) || 0,
+        area_total: parseFloat(document.getElementById('totalM2')?.innerText) || 0,
+        valor_total: parseFloat(
+            (document.getElementById('valorLiquido')?.innerText || '0')
+                .replace(/\./g, '')
+                .replace(',', '.')
+        ) || 0,
+        informacoes: document.getElementById('infoLogInput')?.value || ''
+    };
+
+    showToast('Salvando no banco...', false);
+
+    try {
+        const [saved] = await sb.insert('romaneios', romaneio);
+        const itensComId = itens.map(it => ({
+            ...it,
+            romaneio_id: saved.id
+        }));
+
+        await sb.insert('romaneio_itens', itensComId);
+
+        state.num++;
+        state.historico.unshift({
+            id: saved.id,
+            num: romaneio.numero,
+            data: romaneio.data_emissao,
+            cliente: romaneio.cliente,
+            doc: romaneio.doc_cliente,
+            vendedor: romaneio.vendedor,
+            pagamento: romaneio.pagamento,
+            parcelas: romaneio.parcelas,
+            ipi: romaneio.ipi,
+            desconto: romaneio.desconto,
+            outros: romaneio.outras_despesas,
+            area: romaneio.area_total,
+            valor: romaneio.valor_total,
+            info: romaneio.informacoes,
+            itens: itens.map(it => ({
+                mat: it.material,
+                ind: it.industrializacao,
+                lote: it.lote,
+                c: it.comprimento,
+                a: it.altura,
+                l: it.largura,
+                q: it.quantidade,
+                p: it.preco,
+                area: it.area,
+                total: it.total
+            }))
+        });
+
+        showToast('✅ Romaneio salvo com sucesso!');
+    } catch (e) {
+        console.error(e);
+        showToast('❌ Erro ao salvar: ' + e.message, true);
+        return;
+    }
 
     const dispInfoLog = document.getElementById('dispInfoLog');
     if (dispInfoLog) {
-      dispInfoLog.innerText = resultado.romaneio.informacoes;
-      dispInfoLog.style.display = resultado.romaneio.informacoes ? 'block' : 'none';
+        dispInfoLog.innerText = romaneio.informacoes;
+        dispInfoLog.style.display = romaneio.informacoes ? 'block' : 'none';
     }
 
-    prepararTituloPdf();
+    // ── Atualiza a faixa de ID e o título do documento antes de imprimir ──
+    atualizarPdfIdBar();
+
+    // Título do documento = nome que aparece no "Salvar PDF" do browser
+    const nomeEmpresaAtual = state.nomeEmpresa || 'MegaOnline';
+    const cliParaPdf = cli.replace(/[/\\?%*:|"<>]/g, '-'); // sanitiza caracteres inválidos
+    document.title = `Romaneio_${String(numRomaneio).padStart(3,'0')}_${cliParaPdf}`;
+
     window.print();
 
+    // Restaura o título original após o print
     setTimeout(() => {
-      document.title = nomeEmpresaAtual + ' - Gestão de Romaneio';
-      location.reload();
+        document.title = nomeEmpresaAtual + ' - Gestão de Romaneio';
+        location.reload();
     }, 800);
-  } catch (e) {
-    console.error(e);
-    showToast('❌ Erro ao salvar: ' + e.message, true);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerText = oldText || '✔ FINALIZAR E GERAR PDF';
-    }
-  }
 }
 
 // ─────────────────────────────────────────────
@@ -2624,7 +2326,6 @@ function abrirModal(id) {
   }
   
   document.getElementById('btnImprimirHist').onclick = () => reimprimirDoHistorico(id);
-  document.getElementById('btnCompartilharHist').onclick = () => compartilharDoHistorico(id);
 
   document.getElementById('modalContent').innerHTML = `
     <div style="
@@ -2739,110 +2440,6 @@ function openTab(id, btn) {
   if (id === 'cadastros') renderCadastros();
 }
 
-
-function preencherFormularioComRomaneioHistorico(r) {
-    if (!r) return false;
-
-    document.getElementById('romaneioNumero').innerText = String(r.num || '').padStart(3, '0');
-
-    const dataIso = (r.data || '').includes('/')
-      ? r.data.split('/').reverse().join('-')
-      : (r.data || '');
-    document.getElementById('currentDate').value = dataIso;
-
-    document.getElementById('clienteSelect').value = r.cliente || '';
-    document.getElementById('docCliente').value = r.doc || '';
-    document.getElementById('vendedorInput').value = r.vendedor || '';
-    document.getElementById('pagSelect').value = r.pagamento || 'Boleto';
-    document.getElementById('qtdParc').value = r.parcelas || 1;
-    document.getElementById('ipiPerc').value = r.ipi || 0;
-    document.getElementById('outrasExp').value = r.outros || 0;
-    document.getElementById('descontoF').value = r.desconto || 0;
-    document.getElementById('infoLogInput').value = r.info || '';
-
-    syncCliente();
-    document.getElementById('dispVendedor').innerText = r.vendedor || '---';
-    document.getElementById('dispPagamento').innerText = r.pagamento || 'Boleto';
-
-    const dispInfoLog = document.getElementById('dispInfoLog');
-    if (dispInfoLog) {
-        dispInfoLog.innerText = r.info || '';
-        dispInfoLog.style.display = r.info ? 'block' : 'none';
-    }
-
-    const tbody = document.querySelector('#mainTable tbody');
-    tbody.innerHTML = '';
-
-    (r.itens || []).forEach(it => {
-        addRow();
-        const lastRow = tbody.lastElementChild;
-        lastRow.querySelector('.mat-drop').value = it.mat || '';
-        lastRow.querySelector('.ind-drop').value = it.ind || '';
-        lastRow.querySelector('td input[type="text"]').value = it.lote || '';
-        lastRow.querySelector('.c').value = it.c || 0;
-        lastRow.querySelector('.a').value = it.a || 0;
-        lastRow.querySelector('.l').value = it.l || 0.02;
-        lastRow.querySelector('.q').value = it.q || 1;
-        lastRow.querySelector('.p').value = it.p || 0;
-    });
-
-    calcFinal();
-    atualizarPdfIdBar();
-    return true;
-}
-
-async function compartilharDoHistorico(id) {
-    const r = state.historico.find(x => x.id === id);
-    if (!r) return;
-
-    const btn = document.getElementById('btnCompartilharHist');
-    const oldText = btn?.innerText;
-
-    try {
-        if (btn) {
-            btn.disabled = true;
-            btn.innerText = 'GERANDO PDF...';
-        }
-
-        fecharModal();
-        openTab('novo');
-        preencherFormularioComRomaneioHistorico(r);
-
-        showToast('Gerando PDF do histórico...', false);
-        await new Promise(resolve => setTimeout(resolve, 350));
-
-        const nomeArquivo = getNomeArquivoPdf();
-        const pdfBlob = await gerarPdfBlob();
-        const pdfFile = new File([pdfBlob], nomeArquivo, { type: 'application/pdf' });
-
-        if (navigator.canShare && navigator.canShare({ files: [pdfFile] }) && navigator.share) {
-            await navigator.share({
-                title: nomeArquivo,
-                text: `Romaneio ${String(r.num || '').padStart(3, '0')} - ${r.cliente || ''}`,
-                files: [pdfFile]
-            });
-            showToast('PDF compartilhado!');
-        } else {
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(pdfBlob);
-            a.download = nomeArquivo;
-            a.click();
-            setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-            showToast('PDF baixado. Anexe o arquivo no WhatsApp/Email.');
-        }
-    } catch (e) {
-        if (e && e.name === 'AbortError') return;
-        console.error(e);
-        showToast('Erro ao compartilhar PDF do histórico: ' + (e.message || e), true);
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerText = oldText || '📤 Compartilhar';
-        }
-        limparFormulario();
-    }
-}
-
 function reimprimirDoHistorico(id) {
     const r = state.historico.find(x => x.id === id);
     if (!r) return;
@@ -2897,15 +2494,12 @@ function reimprimirDoHistorico(id) {
 
     // Dispara o Print
     setTimeout(() => {
-        const nomeEmpresaAtual = state.nomeEmpresa || 'MegaOnline';
-        prepararTituloPdf();
         window.print();
         
         // Limpeza automática e restauração do botão após a saída da impressão
         btnFinalizar.disabled = false;
         btnFinalizar.innerText = "✔ FINALIZAR E GERAR PDF";
         btnFinalizar.style.background = "var(--primary)";
-        document.title = nomeEmpresaAtual + ' - Gestão de Romaneio';
         
         limparFormulario(); // Limpa tudo para o próximo romaneio
         showToast("Formulário resetado para novo romaneio");
