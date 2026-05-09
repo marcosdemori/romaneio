@@ -6,6 +6,7 @@
 <title>MegaOnline - Gestão de Romaneio</title>
 <link id="favicon" rel="icon" type="image/png" href="">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 <style>
 * {
   box-sizing: border-box;
@@ -330,6 +331,18 @@ textarea.erro {
   cursor: pointer;
 }
 
+.lote-input {
+  width: 100%;
+  min-width: 60px;
+}
+
+/* Melhora de foco nos selects da tabela (mobile) */
+.mat-drop:focus,
+.ind-drop:focus {
+  outline: 2px solid var(--primary);
+  background: #eef3ff;
+}
+
 /* INFO CONTAINER */
 .info-container {
   display: grid;
@@ -419,12 +432,21 @@ td {
 
 @media (max-width: 700px) {
   #mainTable input {
-    min-height: 40px;
-    font-size: 14px;
+    min-height: 44px;       /* antes 40px */
+    font-size: 16px;        /* antes 14px – evita zoom no iOS */
+    padding: 8px 4px;
   }
-
   td {
-    padding: 5px 4px;
+    padding: 8px 5px;       /* antes 5px 4px */
+  }
+  /* Aumenta também os selects */
+  #mainTable select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  #mainTable select.mat-drop,
+  #mainTable select.ind-drop {
+    font-size: 16px;
   }
 }
 
@@ -446,6 +468,7 @@ td {
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
+  overflow-x: auto;
 }
 
 .parcelas-card h3 {
@@ -558,10 +581,9 @@ td {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 22px;
+  font-size: 24px;
   padding: 4px 8px;
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 44px;
   line-height: 1;
 }
 
@@ -1013,6 +1035,19 @@ td {
     display: none !important;
   }
 
+  .only-print {
+      display: inline !important;
+  }
+
+  input[type="date"].no-print {
+      display: none !important;
+  }
+
+  /* Evita que a tabela de parcelas force largura mínima no PDF */
+  .parcelas-card table {
+    min-width: unset !important;
+  }
+
   body {
     background: white;
     padding: 0;
@@ -1033,8 +1068,33 @@ td {
     min-width: unset;
   }
 
-  #mainTable input {
-    pointer-events: none;
+  /* Distribuição fixa das colunas na impressão */
+  #mainTable th:nth-child(1), #mainTable td:nth-child(1) { width: 6%; }   /* Qtd */
+  #mainTable th:nth-child(2), #mainTable td:nth-child(2) { width: 18%; }  /* Material */
+  #mainTable th:nth-child(3), #mainTable td:nth-child(3) { width: 14%; }  /* Industrialização */
+  #mainTable th:nth-child(4), #mainTable td:nth-child(4) { width: 8%; }   /* Lote */
+  #mainTable th:nth-child(5), #mainTable td:nth-child(5) { width: 10%; }  /* Comp */
+  #mainTable th:nth-child(6), #mainTable td:nth-child(6) { width: 10%; }  /* Altura */
+  #mainTable th:nth-child(7), #mainTable td:nth-child(7) { width: 10%; }  /* Larg/Esp */
+  #mainTable th:nth-child(8), #mainTable td:nth-child(8) { width: 6%; }   /* m² */
+  #mainTable th:nth-child(9), #mainTable td:nth-child(9) { width: 10%; }  /* Preço */
+  #mainTable th:nth-child(10), #mainTable td:nth-child(10) { width: 8%; } /* Total */
+
+  /* Reduz fonte para caber melhor */
+  #mainTable input,
+  #mainTable select {
+    font-size: 9px;
+  }
+
+  .parcelas-card table td,
+  .parcelas-card table th {
+    font-size: 9px;
+    padding: 4px 6px;
+  }
+
+  /* Evita quebra de página no meio de uma linha */
+  #mainTable tr {
+    page-break-inside: avoid;
   }
 
   #dispInfoLog {
@@ -1060,6 +1120,16 @@ td {
     align-items: center;
     gap: 6px;
   }
+  
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
+  }
+}
+
+/* Touch-friendly global */
+input, select, textarea, button {
+  min-height: 44px;  /* já aplica a todos, mas pode ser redundante; ajuste se necessário */
 }
 
 /* LOADING */
@@ -1134,21 +1204,17 @@ td {
   .signature-area {
     width: 100%;
   }
+
+  .editable-date {
+    width: 100% !important;
+    max-width: none;
+  }
 }
 
 /* Estilo para o input de data */
 .editable-date:focus {
     outline: 1px solid var(--primary);
     background: #f0f4ff;
-}
-
-@media print {
-    .only-print {
-        display: inline !important;
-    }
-    input[type="date"].no-print {
-        display: none !important;
-    }
 }
 
 /* Melhora a leitura em telas pequenas para campos numéricos */
@@ -1216,7 +1282,7 @@ input::-webkit-inner-spin-button {
 
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:18px" class="no-print">
     <div class="tabs" style="margin:0;flex:1">
-      <button class="tab-btn active" onclick="limparFormulario(); openTab('novo', this)">Novo Romaneio</button>
+      <button class="tab-btn active" onclick="handleNovoRomaneio()">Novo Romaneio</button>
       <button class="tab-btn" onclick="openTab('cadastros',this)">Cadastros</button>
       <button class="tab-btn" onclick="openTab('historico',this)">Histórico e Gestão</button>
     </div>
@@ -1252,7 +1318,7 @@ input::-webkit-inner-spin-button {
         <div class="romaneio-badge">ROMANEIO DE CARREGAMENTO</div>
         <div class="romaneio-num">Nº <span id="romaneioNumero">001</span></div>
         <div style="font-size:11px;color:#666;margin-top:4px">
-        Data: <input type="date" id="currentDate" class="editable-date no-print" style="border:none; color:#666; font-family:inherit; font-size:11px; width:110px;">
+        Data: <input type="date" id="currentDate" class="editable-date no-print" style="border:none; color:#666; font-family:inherit; font-size:11px; width:100%; max-width:130px;">
         <span id="dispDatePrint" class="only-print" style="display:none"></span>
       </div>
       </div>
@@ -1462,17 +1528,17 @@ input::-webkit-inner-spin-button {
       <div class="config-section-body">
         <div class="form-group">
           <label>Nome da Empresa</label>
-          <input type="text" id="cfgNome" oninput="salvarConfigEmpresa()">
+          <input type="text" id="cfgNome" oninput="salvarConfigEmpresaDebounced()">
         </div>
 
         <div class="form-group">
           <label>Subtítulo / Slogan</label>
-          <input type="text" id="cfgSub" oninput="salvarConfigEmpresa()">
+          <input type="text" id="cfgSub" oninput="salvarConfigEmpresaDebounced()">
         </div>
 
         <div class="form-group">
           <label>Telefone / WhatsApp</label>
-          <input type="tel" id="cfgTel" inputmode="tel" oninput="salvarConfigContato()">
+          <input type="tel" id="cfgTel" inputmode="tel" oninput="salvarConfigContatoDebounced()">
         </div>
 
         <div class="form-group">
@@ -1486,7 +1552,7 @@ input::-webkit-inner-spin-button {
               <option value="linkedin.com/in/">LinkedIn</option>
               <option value="">Link próprio</option>
             </select>
-            <input type="text" id="cfgRedeUser" placeholder="usuário ou link" oninput="salvarConfigContato()" style="flex:1;min-width:100px">
+            <input type="text" id="cfgRedeUser" placeholder="usuário ou link" oninput="salvarConfigContatoDebounced()" style="flex:1;min-width:100px">
           </div>
         </div>
 
@@ -1520,6 +1586,7 @@ input::-webkit-inner-spin-button {
     <div class="hist-controls no-print">
       <input type="text" id="buscaHist" placeholder="🔍 Filtrar por cliente..." oninput="renderHist()">
       <button class="btn-sm" style="background:#6c757d;color:white" onclick="exportarCSV()">Exportar CSV</button>
+      <button class="btn-sm" style="background:var(--danger);color:white" onclick="limparHistorico()" title="Apaga TODOS os romaneios do banco">🗑️ Limpar Histórico</button>
     </div>
 
     <div class="scroll-hint no-print">← Role para ver ações →</div>
@@ -1543,17 +1610,6 @@ input::-webkit-inner-spin-button {
     <p style="font-size:11px;color:#aaa;margin-top:10px;text-align:center" class="no-print">
       Clique em uma linha para ver detalhes
     </p>
-
-    <!-- <div class="config-section no-print" style="margin-top:16px;border-color:#f5c6cb">
-      <div class="config-section-header" style="background:#fff5f5;color:var(--danger)">
-        ⚠️ Zona de Perigo
-      </div>
-      <div style="padding:16px;display:flex;gap:12px;flex-wrap:wrap">
-        <button onclick="limparHistorico()" style="padding:10px 18px;background:var(--danger);color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:bold">
-          🗑️ Limpar Histórico
-        </button>
-      </div>
-    </div> -->
   </div>
 </div><!-- /appContainer -->
 
@@ -1605,7 +1661,42 @@ const sb = {
   insert: (t, d) => sbFetch(t, 'POST', d),
   update: (t, q, d) => sbFetch(t + '?' + q, 'PATCH', d),
   delete: (t, q) => sbFetch(t + '?' + q, 'DELETE'),
+  rpc:    (fn, args = {}) => sbFetch('rpc/' + fn, 'POST', args),
 };
+
+// ─────────────────────────────────────────────
+// SEGURANÇA - HASH DE SENHA (SHA-256 com salt por usuário)
+// ─────────────────────────────────────────────
+// A chave SB_KEY publishable é pública por design do Supabase.
+// A segurança REAL vem das RLS policies (ver db.sql):
+//   • Tabelas operacionais (clientes, materiais, etc) → policy permissiva
+//   • usuarios_sistema → BLOQUEADA. Acesso só via RPC (login_check,
+//     usuario_criar, usuario_remover, usuario_trocar_senha, usuarios_listar)
+//
+// O cliente NUNCA recebe hashes de senha — toda comparação é feita no
+// servidor dentro das RPCs com SECURITY DEFINER.
+async function hashPassword(senha, usuario) {
+  const salt = 'megaonline_v1_' + (usuario || '').toLowerCase().trim();
+  const data = new TextEncoder().encode(salt + '|' + senha);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return 'h1$' + hashHex;
+}
+
+// Nota: a verificação de senha em si acontece nas RPC functions do Supabase
+// (login_check, usuario_trocar_senha). O cliente apenas envia o hash.
+
+// ─────────────────────────────────────────────
+// DEBOUNCE - evita salvar a cada tecla digitada
+// ─────────────────────────────────────────────
+function debounce(fn, delay = 600) {
+  let timer;
+  return function(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
 
 // ─────────────────────────────────────────────
 // STATE
@@ -1634,19 +1725,19 @@ let modalRomaneioId = null;
 // ─────────────────────────────────────────────
 async function loadFromDB() {
   try {
-    const [clis, mats, inds, cfg, users, roms] = await Promise.all([
+    const [clis, mats, inds, cfg, roms] = await Promise.all([
       sb.select('clientes', 'order=nome'),
       sb.select('materiais', 'order=nome'),
       sb.select('industrializacoes', 'order=nome'),
       sb.select('config_empresa', 'id=eq.1'),
-      sb.select('usuarios_sistema'),
       sb.select('romaneios', 'order=criado_em.desc')
     ]);
 
     state.clientes = clis.map(r => r.nome);
     state.materiais = mats.map(r => r.nome);
     state.industrializacoes = inds.map(r => r.nome);
-    state.usuarios = users.map(r => ({ user: r.usuario, pass: r.senha, id: r.id }));
+    // usuarios são carregados sob demanda via RPC (tabela bloqueada para anon)
+    state.usuarios = [];
 
     if (cfg && cfg[0]) {
       const c = cfg[0];
@@ -1707,24 +1798,60 @@ async function loadFromDB() {
 // ─────────────────────────────────────────────
 // LOGIN
 // ─────────────────────────────────────────────
-function fazerLogin() {
+async function fazerLogin() {
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
-  
-  const userObj = state.usuarios.find(x => x.user === u && x.pass === p);
-  
-  if (userObj) {
-    sessionStorage.setItem('t_logado', '1');
-    sessionStorage.setItem('u_nome', userObj.user);
-    sessionStorage.setItem('u_id', userObj.id);
-    
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('appContainer').style.display = 'block';
-    init();
-  } else {
-    document.getElementById('loginErr').classList.add('show');
-    document.getElementById('loginPass').value = '';
+  const errEl = document.getElementById('loginErr');
+
+  const showErr = (msg) => {
+    errEl.textContent = msg || 'Usuário ou senha incorretos';
+    errEl.classList.add('show');
+  };
+
+  if (!u || !p) {
+    showErr('Preencha usuário e senha');
+    return;
   }
+
+  let result = null;
+  try {
+    const senhaHash = await hashPassword(p, u);
+    result = await sb.rpc('login_check', {
+      p_usuario:     u,
+      p_senha_texto: p,
+      p_senha_hash:  senhaHash
+    });
+  } catch (e) {
+    console.error('Erro ao verificar login:', e);
+    showErr('Erro de conexão. Tente novamente.');
+    return;
+  }
+
+  // Bloqueado por excesso de tentativas
+  if (result && result.blocked) {
+    const segs = Number(result.retry_after_seconds) || 60;
+    const min = Math.ceil(segs / 60);
+    showErr(`Muitas tentativas falhas. Tente novamente em ${min} min.`);
+    document.getElementById('loginPass').value = '';
+    return;
+  }
+
+  // Senha incorreta ou usuário não existe
+  if (!result || !result.ok || !result.user_id) {
+    showErr('Usuário ou senha incorretos');
+    document.getElementById('loginPass').value = '';
+    return;
+  }
+
+  // Sucesso
+  errEl.classList.remove('show');
+  sessionStorage.setItem('t_logado', '1');
+  sessionStorage.setItem('u_nome', u);
+  sessionStorage.setItem('u_id', result.user_id);
+
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appContainer').style.display = 'block';
+  init();
 }
 
 function fazerLogout() {
@@ -1785,6 +1912,8 @@ function init() {
     if (usuarioLogado && inputVendedor) {
         inputVendedor.value = usuarioLogado;
         if (dispVendedor) dispVendedor.innerText = usuarioLogado;
+        // Dispara evento input para manter sincronia com outros listeners
+        inputVendedor.dispatchEvent(new Event('input'));
     }
 
     // 3. Número do romaneio
@@ -1910,9 +2039,6 @@ function updateDropdowns() {
 
 // ─────────────────────────────────────────────
 // FAIXA DE IDENTIFICAÇÃO DO PDF
-// Atualiza o elemento #pdfIdBar e o document.title
-// antes de imprimir, para que o PDF mostre
-// "Romaneio Nº 001 – Cliente: Fulano de Tal"
 // ─────────────────────────────────────────────
 function atualizarPdfIdBar() {
   const num    = document.getElementById('romaneioNumero')?.innerText.trim() || '---';
@@ -1944,7 +2070,7 @@ function addRow() {
       <select class="ind-drop" style="width:100%;font-size:12px;border:none;background:transparent;min-height:36px" onchange="this.style.outline=''"></select>
     </td>
     <td>
-      <input type="text" style="width:60px" placeholder="—">
+      <input type="text" class="lote-input" placeholder="—">
     </td>
     <td class="col-dim">
       <input type="number" step="0.01" min="0" class="c" inputmode="decimal" oninput="calcFinal();validarCampo(this)" placeholder="0.00">
@@ -2060,6 +2186,44 @@ function calcFinal() {
 }
 
 // ─────────────────────────────────────────────
+// VERIFICA SE HÁ DADOS PREENCHIDOS (para aviso ao trocar de aba)
+// ─────────────────────────────────────────────
+function formTemDados() {
+  const cliente = document.getElementById('clienteSelect')?.value;
+  const doc = document.getElementById('docCliente')?.value;
+  const vendedor = document.getElementById('vendedorInput')?.value;
+  const info = document.getElementById('infoLogInput')?.value;
+  const rows = document.querySelectorAll('#mainTable tbody tr');
+  const temLinhaPreenchida = Array.from(rows).some(row => {
+    const mat = row.querySelector('.mat-drop')?.value;
+    const ind = row.querySelector('.ind-drop')?.value;
+    const lote = row.querySelector('.lote-input')?.value;
+    const c = row.querySelector('.c')?.value;
+    const a = row.querySelector('.a')?.value;
+    const l = row.querySelector('.l')?.value;
+    const p = row.querySelector('.p')?.value;
+    const q = row.querySelector('.q')?.value;
+    return mat || ind || lote || (c && parseFloat(c) > 0) || (a && parseFloat(a) > 0) || (l && parseFloat(l) > 0) || (p && parseFloat(p) > 0) || (q && parseInt(q) > 1);
+  });
+  return !!cliente || !!doc || !!vendedor || !!info || temLinhaPreenchida;
+}
+
+// ─────────────────────────────────────────────
+// HANDLER PARA BOTÃO "NOVO ROMANEIO" (com aviso)
+// ─────────────────────────────────────────────
+function handleNovoRomaneio() {
+  if (formTemDados()) {
+    confirmar('Os dados atuais serão perdidos. Deseja realmente limpar o formulário?', () => {
+      limparFormulario();
+      openTab('novo', document.querySelector('.tab-btn.active'));
+    });
+  } else {
+    limparFormulario();
+    openTab('novo', document.querySelector('.tab-btn.active'));
+  }
+}
+
+// ─────────────────────────────────────────────
 // FINALIZAR — SALVA NO BANCO
 // ─────────────────────────────────────────────
 function verificarNumDuplicado() {
@@ -2139,7 +2303,7 @@ async function finalizar() {
         itens.push({
             material: row.querySelector('.mat-drop')?.value || '',
             industrializacao: row.querySelector('.ind-drop')?.value || '',
-            lote: row.querySelector('td input[type="text"]')?.value || '',
+            lote: row.querySelector('.lote-input')?.value || '',
             comprimento: c,
             altura: a,
             largura: l,
@@ -2171,6 +2335,12 @@ async function finalizar() {
         ) || 0,
         informacoes: document.getElementById('infoLogInput')?.value || ''
     };
+
+    // Indicador de salvamento
+    const btnFinalizar = document.getElementById('btnFinalizar');
+    const textoOriginal = btnFinalizar.innerText;
+    btnFinalizar.disabled = true;
+    btnFinalizar.innerText = '⏳ Salvando...';
 
     showToast('Salvando no banco...', false);
 
@@ -2217,6 +2387,8 @@ async function finalizar() {
     } catch (e) {
         console.error(e);
         showToast('❌ Erro ao salvar: ' + e.message, true);
+        btnFinalizar.disabled = false;
+        btnFinalizar.innerText = textoOriginal;
         return;
     }
 
@@ -2236,8 +2408,10 @@ async function finalizar() {
 
     window.print();
 
-    // Restaura o título original após o print
+    // Restaura o título original e o botão após o print
     setTimeout(() => {
+        btnFinalizar.disabled = false;
+        btnFinalizar.innerText = textoOriginal;
         document.title = nomeEmpresaAtual + ' - Gestão de Romaneio';
         location.reload();
     }, 800);
@@ -2446,7 +2620,11 @@ function reimprimirDoHistorico(id) {
 
     // 1. Preenche o cabeçalho
     document.getElementById('romaneioNumero').innerText = r.num;
-    document.getElementById('currentDate').value = r.data.split('/').reverse().join('-'); // Converte DD/MM/AAAA para YYYY-MM-DD
+    // Tratamento robusto da data
+    const partesData = r.data.split('/');
+    if (partesData.length === 3) {
+        document.getElementById('currentDate').value = `${partesData[2]}-${partesData[1]}-${partesData[0]}`;
+    }
     document.getElementById('clienteSelect').value = r.cliente;
     document.getElementById('docCliente').value = r.doc;
     document.getElementById('vendedorInput').value = r.vendedor;
@@ -2469,11 +2647,11 @@ function reimprimirDoHistorico(id) {
     tbody.innerHTML = '';
     
     r.itens.forEach(it => {
-        addRow(); // Chama sua função existente para criar a linha
+        addRow();
         const lastRow = tbody.lastElementChild;
         lastRow.querySelector('.mat-drop').value = it.mat;
         lastRow.querySelector('.ind-drop').value = it.ind;
-        lastRow.querySelector('td input[type="text"]').value = it.lote;
+        lastRow.querySelector('.lote-input').value = it.lote;
         lastRow.querySelector('.c').value = it.c;
         lastRow.querySelector('.a').value = it.a;
         lastRow.querySelector('.l').value = it.l;
@@ -2484,7 +2662,7 @@ function reimprimirDoHistorico(id) {
     // 3. Recalcula totais e dispara o Print
     calcFinal();
     fecharModal();
-    openTab('novo'); // Muda para a aba de visualização
+    openTab('novo');
     
     // Bloqueia o botão para evitar salvar por cima do histórico
     const btnFinalizar = document.getElementById('btnFinalizar');
@@ -2501,7 +2679,7 @@ function reimprimirDoHistorico(id) {
         btnFinalizar.innerText = "✔ FINALIZAR E GERAR PDF";
         btnFinalizar.style.background = "var(--primary)";
         
-        limparFormulario(); // Limpa tudo para o próximo romaneio
+        limparFormulario();
         showToast("Formulário resetado para novo romaneio");
     }, 500);
 }
@@ -2549,11 +2727,19 @@ function limparFormulario() {
 // ─────────────────────────────────────────────
 // CADASTROS
 // ─────────────────────────────────────────────
-function renderCadastros() {
+async function renderCadastros() {
   renderCadList('clientes', 'clientes', 'cliList', 'cliCount');
   renderCadList('materiais', 'materiais', 'matList', 'matCount');
   renderCadList('industrializacoes', 'industrializacoes', 'indList', 'indCount');
 
+  // Carrega lista de usuários via RPC (tabela usuarios_sistema é bloqueada para anon)
+  try {
+    const lista = await sb.rpc('usuarios_listar', {});
+    state.usuarios = (lista || []).map(r => ({ id: r.id, user: r.usuario }));
+  } catch (e) {
+    console.error('Erro ao carregar usuários:', e);
+    state.usuarios = [];
+  }
   renderUserList();
 
   document.getElementById('cfgNome').value = state.nomeEmpresa || '';
@@ -2690,12 +2876,19 @@ async function cadAddUser() {
   }
 
   try {
-    const [saved] = await sb.insert('usuarios_sistema', {
-      usuario: u,
-      senha: p
+    const senhaHash = await hashPassword(p, u);
+
+    const novoId = await sb.rpc('usuario_criar', {
+      p_usuario:    u,
+      p_senha_hash: senhaHash
     });
 
-    state.usuarios.push({ user: u, pass: p, id: saved.id });
+    if (!novoId) {
+      showToast('Não foi possível criar (nome em uso?)', true);
+      return;
+    }
+
+    state.usuarios.push({ user: u, id: novoId });
 
     document.getElementById('userInput').value = '';
     document.getElementById('passInput').value = '';
@@ -2717,7 +2910,11 @@ async function cadDelUser(idx) {
     const u = state.usuarios[idx];
     confirmar(`Deseja remover o acesso do usuário "${u.user}"?`, async () => {
         try {
-            await sb.delete('usuarios_sistema', 'id=eq.' + u.id);
+            const ok = await sb.rpc('usuario_remover', { p_id: u.id });
+            if (!ok) {
+                showToast('Não foi possível remover (último usuário?)', true);
+                return;
+            }
             state.usuarios.splice(idx, 1);
             renderUserList();
             showToast(`Usuário "${u.user}" removido`);
@@ -2779,29 +2976,47 @@ async function salvarConfigContato() {
   }
 }
 
+// Versões debounced — usadas no oninput dos campos de configuração
+// para evitar uma chamada ao Supabase a cada tecla digitada.
+const salvarConfigEmpresaDebounced = debounce(salvarConfigEmpresa, 700);
+const salvarConfigContatoDebounced = debounce(salvarConfigContato, 700);
+
 async function alterarSenhaAdmin() {
   const atual = document.getElementById('cfgSenhaAtual').value;
   const nova = document.getElementById('cfgSenhaNova').value;
   const userId = sessionStorage.getItem('u_id');
+  const userNome = sessionStorage.getItem('u_nome');
 
   if (!atual || !nova) {
     showToast('Preencha os campos de senha!', true);
     return;
   }
 
-  const userInState = state.usuarios.find(u => u.id === userId);
+  if (nova.length < 4) {
+    showToast('A nova senha deve ter pelo menos 4 caracteres', true);
+    return;
+  }
 
-  if (!userInState || userInState.pass !== atual) {
-    showToast('Senha atual incorreta!', true);
+  if (!userId || !userNome) {
+    showToast('Sessão inválida — faça login de novo', true);
     return;
   }
 
   try {
-    await sb.update('usuarios_sistema', `id=eq.${userId}`, {
-      senha: nova
+    const hashAtual = await hashPassword(atual, userNome);
+    const hashNova  = await hashPassword(nova,  userNome);
+
+    const ok = await sb.rpc('usuario_trocar_senha', {
+      p_id:                 userId,
+      p_senha_atual_texto:  atual,    // p/ caso da senha legada
+      p_senha_atual_hash:   hashAtual,
+      p_senha_nova_hash:    hashNova
     });
 
-    userInState.pass = nova;
+    if (!ok) {
+      showToast('Senha atual incorreta!', true);
+      return;
+    }
 
     document.getElementById('cfgSenhaAtual').value = '';
     document.getElementById('cfgSenhaNova').value = '';
