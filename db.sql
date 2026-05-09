@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════
---  MEGAONLINE - Setup Supabase
+--  MEGAONLINE - Setup Supabase (versão revisada)
 --  Idempotente: pode ser executado várias vezes sem quebrar nada.
 --  Execute este arquivo INTEIRO no Supabase SQL Editor.
 -- ════════════════════════════════════════════════════════════════════
