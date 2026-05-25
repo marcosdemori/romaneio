@@ -31,6 +31,7 @@ Sistema web completo, responsivo e seguro para emissão, controle e reimpressão
 * **Autenticação via RPC:** Tabela de usuários totalmente bloqueada para o cliente. O acesso é feito exclusivamente via procedimentos armazenados (*Stored Procedures / RPCs*) rodando no servidor com privilégios elevados (`SECURITY DEFINER`).
 * **Criptografia Client-Side:** As senhas nunca trafegam em texto puro; é aplicado um hash SHA-256 com *salt* exclusivo por usuário diretamente no navegador.
 * **Proteção contra Força Bruta:** Sistema integrado de *rate-limiting* (bloqueio temporário de 15 minutos após 5 tentativas falhas) e atraso intencional de 500ms por requisição de login para inviabilizar ataques automatizados.
+* **Tela de Login Ajustada:** Layout compacto, centralizado e responsivo, inspirado no modelo de referência, evitando rolagem desnecessária em telas grandes e pequenas.
 
 ---
 
