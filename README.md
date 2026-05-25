@@ -17,10 +17,11 @@ Sistema web completo, responsivo e seguro para emissão, controle e reimpressão
 * **Cálculos Dinâmicos em Tempo Real:** Cômputo automático de área total ($m^2$), subtotal, aplicação de IPI (%), acréscimo de outras despesas e abatimento de descontos.
 * **Detalhamento de Parcelas:** Geração automática do cronograma e valores de parcelas (1x até múltiplas vezes) com base no valor líquido final.
 * **Modo de Reimpressão Seguro:** Resgate de romaneios históricos para visualização e reimpressão em PDF com trava de segurança que impede o sobrescrevimento acidental de dados.
+* **Edição de Romaneio Existente:** A partir do histórico, é possível abrir um romaneio salvo, carregar seus dados no formulário, alterar cabeçalho, itens e valores, e salvar as alterações no mesmo registro sem criar duplicidade.
 
 ### 🗂️ Gestão e Cadastros
 * **Cadastros Independentes:** Gerenciamento de Clientes, Materiais e Industrializações com atualização em tempo real nas listas de seleção.
-* **Histórico Completo:** Tabela de movimentação com busca instantânea (filtro por cliente), totalizadores globais (quantidade, área acumulada e faturamento) e visualização de detalhes em modal.
+* **Histórico Completo:** Tabela de movimentação com busca instantânea (filtro por cliente), totalizadores globais (quantidade, área acumulada e faturamento), visualização de detalhes em modal e ação direta para editar, reimprimir ou excluir romaneios.
 * **Exportação de Dados:** Geração instantânea de relatórios em formato CSV diretamente pelo navegador.
 * **Configurações da Empresa:** Personalização de nome, slogan, telefone/WhatsApp e upload de Logo (salva em Base64 direto no banco), refletindo instantaneamente na interface e no cabeçalho de impressão.
 * **QR Code Dinâmico:** Geração automática de QR Code no rodapé do documento para facilitar o acesso rápido a links ou redes sociais da empresa.
@@ -69,6 +70,27 @@ O script SQL de inicialização (`db.sql`) é **idempotente** e pode ser executa
 3. Usuário: admin / Senha: 1234
 
 ⚠️ Atenção: Altere a senha padrão no primeiro acesso através da aba Cadastros > Alterar Senha de Login.
+
+---
+
+## 📁 Estrutura de Arquivos
+
+O projeto foi separado para facilitar manutenção:
+
+```text
+index.html
+assets/
+  css/
+    style.css
+  js/
+    app.js
+db.sql
+README.md
+```
+
+* `index.html`: estrutura da tela e referências aos assets.
+* `assets/css/style.css`: estilos da aplicação.
+* `assets/js/app.js`: regras de negócio, Supabase, histórico, edição, impressão e cadastros.
 
 ---
 
