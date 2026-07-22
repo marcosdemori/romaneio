@@ -25,13 +25,17 @@ const SB_URL = 'https://kedpkmpcnpbmeaajfcoq.supabase.co';
 const SB_KEY = 'sb_publishable_tkcIOM9l-Vq899jSmmFj1g_CtdzawkP';
 
 async function sbFetch(path, method='GET', body=null) {
+  const prefer = method === 'POST'
+    ? 'return=representation'
+    : (method === 'PATCH' || method === 'DELETE' ? 'return=minimal' : '');
+
   const opts = {
     method,
     headers: {
       'apikey': SB_KEY,
       'Authorization': 'Bearer ' + SB_KEY,
       'Content-Type': 'application/json',
-      'Prefer': method === 'POST' ? 'return=representation' : ''
+      'Prefer': prefer
     }
   };
   if (body) opts.body = JSON.stringify(body);
@@ -110,12 +114,13 @@ let editingRomaneioId = null;
 // ─────────────────────────────────────────────
 async function loadFromDB() {
   try {
-    const [clis, mats, inds, cfg, roms] = await Promise.all([
+    const [clis, mats, inds, cfg, roms, todosItens] = await Promise.all([
       sb.select('clientes', 'order=nome'),
       sb.select('materiais', 'order=nome'),
       sb.select('industrializacoes', 'order=nome'),
       sb.select('config_empresa', 'id=eq.1'),
-      sb.select('romaneios', 'order=criado_em.desc')
+      sb.select('romaneios', 'order=criado_em.desc'),
+      sb.select('romaneio_itens', 'order=romaneio_id.asc,id.asc')
     ]);
 
     state.clientes = clis.map(r => r.nome);
@@ -134,34 +139,38 @@ async function loadFromDB() {
       state.logo = c.logo_base64 || DEFAULT_LOGO;
     }
 
-    // Romaneios com itens
-    state.historico = [];
-    for (const r of roms) {
-      const itens = await sb.select('romaneio_itens', 'romaneio_id=eq.' + r.id + '&order=id');
-      state.historico.push({
-        id: r.id,
-        num: r.numero,
-        data: r.data_emissao,
-        cliente: r.cliente,
-        doc: r.doc_cliente,
-        vendedor: r.vendedor,
-        pagamento: r.pagamento,
-        parcelas: r.parcelas,
-        ipi: r.ipi,
-        desconto: r.desconto,
-        outros: r.outras_despesas,
-        area: r.area_total,
-        valor: r.valor_total,
-        status: normalizarStatusPagamento(r.status_pagamento),
-        info: r.informacoes,
-        itens: itens.map(it => ({
-          mat: it.material, ind: it.industrializacao, lote: it.lote,
-          c: it.comprimento, a: it.altura, l: it.largura,
-          q: it.quantidade, p: it.preco,
-          area: it.area, total: it.total
-        }))
+    // Romaneios com itens: uma única consulta em lote evita uma requisição
+    // separada para cada romaneio, melhorando bastante o carregamento.
+    const itensPorRomaneio = new Map();
+    for (const it of (todosItens || [])) {
+      const chave = String(it.romaneio_id);
+      if (!itensPorRomaneio.has(chave)) itensPorRomaneio.set(chave, []);
+      itensPorRomaneio.get(chave).push({
+        mat: it.material, ind: it.industrializacao, lote: it.lote,
+        c: it.comprimento, a: it.altura, l: it.largura,
+        q: it.quantidade, p: it.preco,
+        area: it.area, total: it.total
       });
     }
+
+    state.historico = roms.map(r => ({
+      id: r.id,
+      num: r.numero,
+      data: r.data_emissao,
+      cliente: r.cliente,
+      doc: r.doc_cliente,
+      vendedor: r.vendedor,
+      pagamento: r.pagamento,
+      parcelas: r.parcelas,
+      ipi: r.ipi,
+      desconto: r.desconto,
+      outros: r.outras_despesas,
+      area: r.area_total,
+      valor: r.valor_total,
+      status: normalizarStatusPagamento(r.status_pagamento),
+      info: r.informacoes,
+      itens: itensPorRomaneio.get(String(r.id)) || []
+    }));
 
     // Próximo número de romaneio
     if (state.historico.length > 0) {
@@ -1091,78 +1100,96 @@ function renderHist() {
 
   if (!body) return;
 
-  body.innerHTML = '';
+  const filtrados = state.historico.filter(r =>
+    (r.cliente || '').toLowerCase().includes(busca)
+  );
 
   let areaAcum = 0;
   let valorAcum = 0;
 
-  state.historico
-    .filter(r => (r.cliente || '').toLowerCase().includes(busca))
-    .forEach(r => {
-      const area = parseFloat(r.area) || 0;
-      const valor = parseFloat(r.valor) || 0;
-      const status = normalizarStatusPagamento(r.status);
+  // Monta todo o HTML uma única vez. Evita reparsing e relayout a cada linha.
+  body.innerHTML = filtrados.map(r => {
+    const area = parseFloat(r.area) || 0;
+    const valor = parseFloat(r.valor) || 0;
+    const status = normalizarStatusPagamento(r.status);
 
-      areaAcum += area;
-      valorAcum += valor;
+    areaAcum += area;
+    valorAcum += valor;
 
-      body.innerHTML += `
-        <tr onclick="abrirModal('${r.id}')" title="Clique para detalhes">
-          <td><strong>#${r.num}</strong></td>
-          <td>${r.data}</td>
-          <td style="text-align:left">${r.cliente}</td>
-          <td>${area.toFixed(2)} m²</td>
-          <td style="font-weight:bold;color:var(--primary)">
-            R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </td>
-          <td onclick="event.stopPropagation()">
-            <button
-              type="button"
-              class="status-pagamento-btn ${status}"
-              onclick="alterarStatusPagamento('${r.id}', this)"
-              title="Clique para alterar o status"
-            >
-              <span aria-hidden="true">${statusPagamentoIcone(status)}</span>
-              ${statusPagamentoLabel(status)}
-            </button>
-          </td>
-          <td class="no-print" onclick="event.stopPropagation()">
-            <button class="btn-sm" style="background:var(--danger);color:white" onclick="delHist('${r.id}')">×</button>
-          </td>
-        </tr>`;
-    });
+    return `
+      <tr onclick="abrirModal('${r.id}')" title="Clique para detalhes">
+        <td><strong>#${r.num}</strong></td>
+        <td>${r.data}</td>
+        <td style="text-align:left">${r.cliente}</td>
+        <td>${area.toFixed(2)} m²</td>
+        <td style="font-weight:bold;color:var(--primary)">
+          R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+        </td>
+        <td onclick="event.stopPropagation()">
+          <button
+            type="button"
+            class="status-pagamento-btn ${status}"
+            data-status-id="${r.id}"
+            onclick="alterarStatusPagamento('${r.id}', this)"
+            title="Clique para alterar o status"
+          >
+            <span aria-hidden="true">${statusPagamentoIcone(status)}</span>
+            <span class="status-pagamento-texto">${statusPagamentoLabel(status)}</span>
+          </button>
+        </td>
+        <td class="no-print" onclick="event.stopPropagation()">
+          <button class="btn-sm" style="background:var(--danger);color:white" onclick="delHist('${r.id}')">×</button>
+        </td>
+      </tr>`;
+  }).join('');
 
-  document.getElementById('statQtd').innerText = state.historico.length;
+  document.getElementById('statQtd').innerText = filtrados.length;
   document.getElementById('statArea').innerText = areaAcum.toFixed(2);
   document.getElementById('statValor').innerText =
     valorAcum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function atualizarBotoesStatusPagamento(id, status, desabilitado = false) {
+  const statusNormalizado = normalizarStatusPagamento(status);
+
+  document.querySelectorAll('.status-pagamento-btn').forEach(botao => {
+    if (String(botao.dataset.statusId) !== String(id)) return;
+
+    botao.classList.toggle('pago', statusNormalizado === 'pago');
+    botao.classList.toggle('pendente', statusNormalizado === 'pendente');
+    botao.disabled = desabilitado;
+
+    const icone = botao.querySelector('[aria-hidden="true"]');
+    const texto = botao.querySelector('.status-pagamento-texto');
+    if (icone) icone.textContent = statusPagamentoIcone(statusNormalizado);
+    if (texto) texto.textContent = statusPagamentoLabel(statusNormalizado);
+  });
+}
+
 async function alterarStatusPagamento(id, botao = null) {
   const romaneio = state.historico.find(r => String(r.id) === String(id));
-  if (!romaneio) return;
+  if (!romaneio || botao?.disabled) return;
 
   const statusAnterior = normalizarStatusPagamento(romaneio.status);
   const novoStatus = statusAnterior === 'pago' ? 'pendente' : 'pago';
 
-  if (botao) botao.disabled = true;
+  // Atualização otimista: a interface responde imediatamente e apenas os
+  // botões do romaneio alterado são atualizados, sem reconstruir a tabela.
+  romaneio.status = novoStatus;
+  atualizarBotoesStatusPagamento(id, novoStatus, true);
 
   try {
     await sb.update('romaneios', 'id=eq.' + id, { status_pagamento: novoStatus });
-    romaneio.status = novoStatus;
-    renderHist();
-
-    if (String(modalRomaneioId) === String(id)) {
-      abrirModal(id);
-    }
+    atualizarBotoesStatusPagamento(id, novoStatus, false);
 
     showToast(novoStatus === 'pago'
       ? '✅ Romaneio marcado como pago'
       : '⚠️ Romaneio marcado como pendente');
   } catch (e) {
     console.error(e);
+    romaneio.status = statusAnterior;
+    atualizarBotoesStatusPagamento(id, statusAnterior, false);
     showToast('❌ Erro ao alterar o status: ' + e.message, true);
-    if (botao) botao.disabled = false;
   }
 }
 
@@ -1229,11 +1256,12 @@ function abrirModal(id) {
         <button
           type="button"
           class="status-pagamento-btn ${normalizarStatusPagamento(r.status)}"
+          data-status-id="${r.id}"
           onclick="alterarStatusPagamento('${r.id}', this)"
           title="Clique para alterar o status"
         >
           <span aria-hidden="true">${statusPagamentoIcone(r.status)}</span>
-          ${statusPagamentoLabel(r.status)}
+          <span class="status-pagamento-texto">${statusPagamentoLabel(r.status)}</span>
         </button>
       </div>
       <div><strong>Área Total:</strong> ${r.area} m²</div>
