@@ -152,6 +152,7 @@ async function loadFromDB() {
         outros: r.outras_despesas,
         area: r.area_total,
         valor: r.valor_total,
+        status: normalizarStatusPagamento(r.status_pagamento),
         info: r.informacoes,
         itens: itens.map(it => ({
           mat: it.material, ind: it.industrializacao, lote: it.lote,
@@ -755,7 +756,19 @@ function coletarDadosRomaneioFormulario(ignoreDuplicateId = null) {
     return { cli, numRomaneio, romaneio, itens };
 }
 
-function toHistoricoRomaneio(id, romaneio, itens) {
+function normalizarStatusPagamento(status) {
+  return String(status || '').toLowerCase() === 'pago' ? 'pago' : 'pendente';
+}
+
+function statusPagamentoLabel(status) {
+  return normalizarStatusPagamento(status) === 'pago' ? 'Pago' : 'Pendente';
+}
+
+function statusPagamentoIcone(status) {
+  return normalizarStatusPagamento(status) === 'pago' ? '✓' : '!';
+}
+
+function toHistoricoRomaneio(id, romaneio, itens, statusAtual = null) {
   return {
     id,
     num: romaneio.numero,
@@ -770,6 +783,7 @@ function toHistoricoRomaneio(id, romaneio, itens) {
     outros: romaneio.outras_despesas,
     area: romaneio.area_total,
     valor: romaneio.valor_total,
+    status: normalizarStatusPagamento(statusAtual || romaneio.status_pagamento),
     info: romaneio.informacoes,
     itens: itens.map(it => ({
       mat: it.material,
@@ -871,7 +885,8 @@ async function salvarEdicaoRomaneio() {
         const itensComId = dados.itens.map(it => ({ ...it, romaneio_id: editingRomaneioId }));
         if (itensComId.length) await sb.insert('romaneio_itens', itensComId);
 
-        const atualizado = toHistoricoRomaneio(editingRomaneioId, dados.romaneio, dados.itens);
+        const anterior = state.historico.find(r => String(r.id) === String(editingRomaneioId));
+        const atualizado = toHistoricoRomaneio(editingRomaneioId, dados.romaneio, dados.itens, anterior?.status);
         state.historico = state.historico.map(r => String(r.id) === String(editingRomaneioId) ? atualizado : r);
 
         editingRomaneioId = null;
@@ -981,6 +996,7 @@ async function finalizar() {
                 .replace(/\./g, '')
                 .replace(',', '.')
         ) || 0,
+        status_pagamento: 'pendente',
         informacoes: document.getElementById('infoLogInput')?.value || ''
     };
 
@@ -1016,6 +1032,7 @@ async function finalizar() {
             outros: romaneio.outras_despesas,
             area: romaneio.area_total,
             valor: romaneio.valor_total,
+            status: normalizarStatusPagamento(romaneio.status_pagamento),
             info: romaneio.informacoes,
             itens: itens.map(it => ({
                 mat: it.material,
@@ -1084,6 +1101,7 @@ function renderHist() {
     .forEach(r => {
       const area = parseFloat(r.area) || 0;
       const valor = parseFloat(r.valor) || 0;
+      const status = normalizarStatusPagamento(r.status);
 
       areaAcum += area;
       valorAcum += valor;
@@ -1097,6 +1115,17 @@ function renderHist() {
           <td style="font-weight:bold;color:var(--primary)">
             R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </td>
+          <td onclick="event.stopPropagation()">
+            <button
+              type="button"
+              class="status-pagamento-btn ${status}"
+              onclick="alterarStatusPagamento('${r.id}', this)"
+              title="Clique para alterar o status"
+            >
+              <span aria-hidden="true">${statusPagamentoIcone(status)}</span>
+              ${statusPagamentoLabel(status)}
+            </button>
+          </td>
           <td class="no-print" onclick="event.stopPropagation()">
             <button class="btn-sm" style="background:var(--danger);color:white" onclick="delHist('${r.id}')">×</button>
           </td>
@@ -1107,6 +1136,34 @@ function renderHist() {
   document.getElementById('statArea').innerText = areaAcum.toFixed(2);
   document.getElementById('statValor').innerText =
     valorAcum.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+async function alterarStatusPagamento(id, botao = null) {
+  const romaneio = state.historico.find(r => String(r.id) === String(id));
+  if (!romaneio) return;
+
+  const statusAnterior = normalizarStatusPagamento(romaneio.status);
+  const novoStatus = statusAnterior === 'pago' ? 'pendente' : 'pago';
+
+  if (botao) botao.disabled = true;
+
+  try {
+    await sb.update('romaneios', 'id=eq.' + id, { status_pagamento: novoStatus });
+    romaneio.status = novoStatus;
+    renderHist();
+
+    if (String(modalRomaneioId) === String(id)) {
+      abrirModal(id);
+    }
+
+    showToast(novoStatus === 'pago'
+      ? '✅ Romaneio marcado como pago'
+      : '⚠️ Romaneio marcado como pendente');
+  } catch (e) {
+    console.error(e);
+    showToast('❌ Erro ao alterar o status: ' + e.message, true);
+    if (botao) botao.disabled = false;
+  }
 }
 
 function abrirModal(id) {
@@ -1167,6 +1224,18 @@ function abrirModal(id) {
       <div><strong>Vendedor:</strong> ${r.vendedor || '—'}</div>
       <div><strong>Pagamento:</strong> ${r.pagamento || '—'}</div>
       <div><strong>Parcelas:</strong> ${r.parcelas || 1}x</div>
+      <div class="modal-status-row">
+        <strong>Status:</strong>
+        <button
+          type="button"
+          class="status-pagamento-btn ${normalizarStatusPagamento(r.status)}"
+          onclick="alterarStatusPagamento('${r.id}', this)"
+          title="Clique para alterar o status"
+        >
+          <span aria-hidden="true">${statusPagamentoIcone(r.status)}</span>
+          ${statusPagamentoLabel(r.status)}
+        </button>
+      </div>
       <div><strong>Área Total:</strong> ${r.area} m²</div>
       <div>
         <strong>Valor Final:</strong>
@@ -1234,14 +1303,14 @@ async function limparHistorico() {
 }
 
 function exportarCSV() {
-  let csv = "Numero;Data;Cliente;CNPJ_CPF;Vendedor;Pagamento;Parcelas;Area_m2;Valor_Final;Itens\n";
+  let csv = "Numero;Data;Cliente;CNPJ_CPF;Vendedor;Pagamento;Parcelas;Area_m2;Valor_Final;Status;Itens\n";
 
   state.historico.forEach(r => {
     const itensStr = r.itens
       ? r.itens.map(it => `${it.mat}(${it.area}m²)`).join('|')
       : '';
 
-    csv += `${r.num};${r.data};${r.cliente};${r.doc || ''};${r.vendedor || ''};${r.pagamento || ''};${r.parcelas || 1};${r.area};${r.valor};"${itensStr}"\n`;
+    csv += `${r.num};${r.data};${r.cliente};${r.doc || ''};${r.vendedor || ''};${r.pagamento || ''};${r.parcelas || 1};${r.area};${r.valor};${statusPagamentoLabel(r.status)};"${itensStr}"\n`;
   });
 
   const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });

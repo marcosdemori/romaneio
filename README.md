@@ -22,6 +22,7 @@ Sistema web completo, responsivo e seguro para emissão, controle e reimpressão
 ### 🗂️ Gestão e Cadastros
 * **Cadastros Independentes:** Gerenciamento de Clientes, Materiais e Industrializações com atualização em tempo real nas listas de seleção.
 * **Histórico Completo:** Tabela de movimentação com busca instantânea (filtro por cliente), totalizadores globais (quantidade, área acumulada e faturamento), visualização de detalhes em modal e ação direta para editar, reimprimir ou excluir romaneios.
+* **Status Financeiro do Romaneio:** Alteração direta no histórico entre **Pendente** (vermelho) e **Pago** (verde), com gravação imediata no banco de dados.
 * **Exportação de Dados:** Geração instantânea de relatórios em formato CSV diretamente pelo navegador.
 * **Configurações da Empresa:** Personalização de nome, slogan, telefone/WhatsApp e upload de Logo (salva em Base64 direto no banco), refletindo instantaneamente na interface e no cabeçalho de impressão.
 * **QR Code Dinâmico:** Geração automática de QR Code no rodapé do documento para facilitar o acesso rápido a links ou redes sociais da empresa.

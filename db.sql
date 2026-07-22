@@ -64,6 +64,7 @@ create table if not exists romaneios (
   outras_despesas   numeric default 0,
   area_total        numeric default 0,
   valor_total       numeric default 0,         -- ⚠ era TEXT '0,00' — corrigido
+  status_pagamento  text not null default 'pendente',
   informacoes       text default '',
   criado_em         timestamptz default now()
 );
@@ -98,6 +99,16 @@ create index if not exists idx_tentativas_usuario_em
 -- ─────────────────────────────────────────────────────
 -- 2. MIGRAÇÃO DE TIPOS (para bancos já existentes)
 -- ─────────────────────────────────────────────────────
+
+-- Garante a coluna de status financeiro em bancos já existentes.
+alter table romaneios
+  add column if not exists status_pagamento text not null default 'pendente';
+
+-- Normaliza registros antigos ou valores fora do padrão.
+update romaneios
+   set status_pagamento = 'pendente'
+ where status_pagamento is null
+    or lower(status_pagamento) not in ('pago', 'pendente');
 
 -- valor_total estava como TEXT (impedia somas/agregações). Converte para numeric.
 do $$
