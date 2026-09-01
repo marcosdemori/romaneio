@@ -37,3 +37,21 @@ export function getSupabaseSecretKey() {
   }
   return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 }
+
+export async function findAuthUserByEmail(admin: any, email: string) {
+  const target = String(email ?? '').trim().toLowerCase();
+  if (!target) return { user: null, error: null };
+
+  const perPage = 1000;
+  for (let page = 1; page <= 100; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) return { user: null, error };
+
+    const users = data?.users ?? [];
+    const user = users.find((item: any) => String(item.email ?? '').toLowerCase() === target) ?? null;
+    if (user) return { user, error: null };
+    if (users.length < perPage) break;
+  }
+
+  return { user: null, error: null };
+}

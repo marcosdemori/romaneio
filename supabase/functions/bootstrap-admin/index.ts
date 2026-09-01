@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.112.2';
-import { authEmailForUsuario, corsHeaders, getSupabaseSecretKey, json } from '../_shared/auth-utils.ts';
+import { authEmailForUsuario, corsHeaders, findAuthUserByEmail, getSupabaseSecretKey, json } from '../_shared/auth-utils.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_ROLE_KEY = getSupabaseSecretKey();
@@ -23,57 +23,96 @@ Deno.serve(async (req) => {
   const usuario = String(payload.usuario ?? '').normalize('NFKC').trim();
   const password = String(payload.password ?? '');
   if (!usuario) return json({ error: 'Informe o usuário administrador' }, 400);
-  if (password.length < 6) return json({ error: 'A senha deve ter pelo menos 6 caracteres' }, 400);
+  if (password.length < 8) return json({ error: 'A senha deve ter pelo menos 8 caracteres' }, 400);
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
 
-  const { count, error: countError } = await admin
+  const { data: linkedProfiles, error: linkedError } = await admin
     .from('usuarios_sistema')
-    .select('id', { count: 'exact', head: true })
+    .select('id, usuario, auth_user_id')
     .not('auth_user_id', 'is', null);
 
-  if (countError) return json({ error: 'Falha ao verificar bootstrap existente' }, 500);
-  if ((count ?? 0) > 0) return json({ error: 'Bootstrap já concluído: já existe usuário autenticado vinculado' }, 409);
-
-  const email = await authEmailForUsuario(usuario);
-  const { data: created, error: createError } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { usuario },
-  });
-
-  if (createError || !created.user) {
-    return json({ error: createError?.message || 'Não foi possível criar o administrador' }, 400);
+  if (linkedError) return json({ error: 'Falha ao verificar bootstrap existente' }, 500);
+  if ((linkedProfiles ?? []).length > 0) {
+    return json({
+      error: 'Bootstrap já concluído: já existe usuário autenticado vinculado',
+      usuarios_vinculados: (linkedProfiles ?? []).map((p) => p.usuario),
+    }, 409);
   }
 
-  const { data: legacyProfile } = await admin
+  const email = await authEmailForUsuario(usuario);
+  const existingResult = await findAuthUserByEmail(admin, email);
+  if (existingResult.error) return json({ error: 'Falha ao verificar usuário Auth existente' }, 500);
+
+  let authUser = existingResult.user;
+  let reusedExistingAuthUser = false;
+
+  if (authUser) {
+    // Recupera bootstrap parcial: a conta Auth já existe, mas nenhum perfil está vinculado.
+    const { data: updated, error: updateError } = await admin.auth.admin.updateUserById(authUser.id, {
+      password,
+      email_confirm: true,
+      user_metadata: { ...(authUser.user_metadata ?? {}), usuario },
+    });
+    if (updateError || !updated.user) {
+      return json({ error: updateError?.message || 'Não foi possível recuperar o administrador existente' }, 400);
+    }
+    authUser = updated.user;
+    reusedExistingAuthUser = true;
+  } else {
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { usuario },
+    });
+    if (createError || !created.user) {
+      return json({ error: createError?.message || 'Não foi possível criar o administrador' }, 400);
+    }
+    authUser = created.user;
+  }
+
+  const { data: legacyProfile, error: profileLookupError } = await admin
     .from('usuarios_sistema')
     .select('id')
     .ilike('usuario', usuario)
     .limit(1)
     .maybeSingle();
 
+  if (profileLookupError) {
+    if (!reusedExistingAuthUser) await admin.auth.admin.deleteUser(authUser.id).catch(() => {});
+    return json({ error: 'Falha ao localizar o perfil do administrador' }, 500);
+  }
+
   let profileError = null;
   if (legacyProfile?.id) {
     const result = await admin
       .from('usuarios_sistema')
-      .update({ auth_user_id: created.user.id, usuario })
+      .update({ auth_user_id: authUser.id, usuario })
       .eq('id', legacyProfile.id);
     profileError = result.error;
   } else {
     const result = await admin
       .from('usuarios_sistema')
-      .insert({ auth_user_id: created.user.id, usuario });
+      .insert({ auth_user_id: authUser.id, usuario });
     profileError = result.error;
   }
 
   if (profileError) {
-    await admin.auth.admin.deleteUser(created.user.id).catch(() => {});
-    return json({ error: 'O usuário Auth foi revertido porque o perfil não pôde ser vinculado' }, 500);
+    if (!reusedExistingAuthUser) await admin.auth.admin.deleteUser(authUser.id).catch(() => {});
+    return json({
+      error: reusedExistingAuthUser
+        ? 'A conta Auth existente foi preservada, mas o perfil não pôde ser vinculado'
+        : 'O usuário Auth foi revertido porque o perfil não pôde ser vinculado',
+    }, 500);
   }
 
-  return json({ ok: true, usuario, auth_user_id: created.user.id }, 201);
+  return json({
+    ok: true,
+    usuario,
+    auth_user_id: authUser.id,
+    recovered_existing_auth_user: reusedExistingAuthUser,
+  }, reusedExistingAuthUser ? 200 : 201);
 });

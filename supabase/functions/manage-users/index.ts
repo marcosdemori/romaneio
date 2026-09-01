@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.112.2';
-import { authEmailForUsuario, corsHeaders, getSupabaseSecretKey, json, normalizeUsername } from '../_shared/auth-utils.ts';
+import { authEmailForUsuario, corsHeaders, findAuthUserByEmail, getSupabaseSecretKey, json, normalizeUsername } from '../_shared/auth-utils.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_ROLE_KEY = getSupabaseSecretKey();
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     const normalizedUsuario = normalizeUsername(usuario);
     const password = String(payload.password ?? '');
     if (!usuario) return json({ error: 'Informe o usuario' }, 400);
-    if (password.length < 6) return json({ error: 'A senha deve ter pelo menos 6 caracteres' }, 400);
+    if (password.length < 8) return json({ error: 'A senha deve ter pelo menos 8 caracteres' }, 400);
 
     const { data: profiles, error: existingError } = await admin
       .from('usuarios_sistema')
@@ -68,15 +68,37 @@ Deno.serve(async (req) => {
     if (legacyProfile?.auth_user_id) return json({ error: 'Usuario ja existe' }, 409);
 
     const email = await authEmailForUsuario(usuario);
-    const { data: created, error: createError } = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { usuario },
-    });
+    const existingResult = await findAuthUserByEmail(admin, email);
+    if (existingResult.error) return json({ error: 'Falha ao verificar conta Auth existente' }, 500);
 
-    if (createError || !created.user) {
-      return json({ error: createError?.message || 'Nao foi possivel criar o usuario' }, 400);
+    let authUser = existingResult.user;
+    let reusedExistingAuthUser = false;
+
+    if (authUser) {
+      const alreadyLinked = (profiles ?? []).find((p) => p.auth_user_id === authUser.id);
+      if (alreadyLinked) return json({ error: 'Usuario ja existe' }, 409);
+
+      const { data: updated, error: updateError } = await admin.auth.admin.updateUserById(authUser.id, {
+        password,
+        email_confirm: true,
+        user_metadata: { ...(authUser.user_metadata ?? {}), usuario },
+      });
+      if (updateError || !updated.user) {
+        return json({ error: updateError?.message || 'Nao foi possivel recuperar a conta Auth existente' }, 400);
+      }
+      authUser = updated.user;
+      reusedExistingAuthUser = true;
+    } else {
+      const { data: created, error: createError } = await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { usuario },
+      });
+      if (createError || !created.user) {
+        return json({ error: createError?.message || 'Nao foi possivel criar o usuario' }, 400);
+      }
+      authUser = created.user;
     }
 
     let profile: { id: string; auth_user_id: string; usuario: string } | null = null;
@@ -84,7 +106,7 @@ Deno.serve(async (req) => {
     if (legacyProfile?.id) {
       const result = await admin
         .from('usuarios_sistema')
-        .update({ auth_user_id: created.user.id, usuario })
+        .update({ auth_user_id: authUser.id, usuario })
         .eq('id', legacyProfile.id)
         .select('id, auth_user_id, usuario')
         .single();
@@ -93,7 +115,7 @@ Deno.serve(async (req) => {
     } else {
       const result = await admin
         .from('usuarios_sistema')
-        .insert({ auth_user_id: created.user.id, usuario })
+        .insert({ auth_user_id: authUser.id, usuario })
         .select('id, auth_user_id, usuario')
         .single();
       profile = result.data;
@@ -101,14 +123,19 @@ Deno.serve(async (req) => {
     }
 
     if (saveError || !profile) {
-      await admin.auth.admin.deleteUser(created.user.id).catch(() => {});
-      return json({ error: 'O usuario Auth foi revertido porque o perfil nao pode ser vinculado' }, 500);
+      if (!reusedExistingAuthUser) await admin.auth.admin.deleteUser(authUser.id).catch(() => {});
+      return json({
+        error: reusedExistingAuthUser
+          ? 'A conta Auth existente foi preservada, mas o perfil nao pode ser vinculado'
+          : 'O usuario Auth foi revertido porque o perfil nao pode ser vinculado'
+      }, 500);
     }
 
     return json({
       user: { id: profile.auth_user_id, profile_id: profile.id, usuario: profile.usuario },
       migrated_legacy_profile: !!legacyProfile,
-    }, 201);
+      recovered_existing_auth_user: reusedExistingAuthUser,
+    }, reusedExistingAuthUser ? 200 : 201);
   }
 
   if (action === 'delete') {
