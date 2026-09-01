@@ -1,0 +1,7 @@
+[functions.manage-users]
+verify_jwt = true
+
+# Única função sem JWT: existe apenas para o primeiro bootstrap e exige
+# x-bootstrap-secret, além de se auto-bloquear após existir um admin vinculado.
+[functions.bootstrap-admin]
+verify_jwt = false
